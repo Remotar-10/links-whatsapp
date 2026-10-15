@@ -3,81 +3,473 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Links do WhatsApp</title>
-</head>
-<body>
-  <h1>Links da conversa</h1>
+  <title>Meus links do WhatsApp</title>
 
-  <input id="arquivo" type="file" accept=".txt,text/plain">
-  <p id="contagem">Carregando links salvos...</p>
-  <button id="apagar" type="button">Apagar todos os links</button>
-  <ul id="links"></ul>
-
-  <script>
-    const chave = "links-whatsapp-salvos";
-    const entrada = document.querySelector("#arquivo");
-    const lista = document.querySelector("#links");
-    const contagem = document.querySelector("#contagem");
-    const botaoApagar = document.querySelector("#apagar");
-
-    let linksSalvos = JSON.parse(localStorage.getItem(chave) || "[]");
-
-    function mostrarLinks() {
-      lista.replaceChildren();
-
-      for (const url of linksSalvos) {
-        const item = document.createElement("li");
-        const link = document.createElement("a");
-
-        link.href = url;
-        link.textContent = url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-
-        item.append(link);
-        lista.append(item);
-      }
-
-      const quantidade = linksSalvos.length;
-      contagem.textContent =
-        `${quantidade} link${quantidade === 1 ? "" : "s"} salvo${quantidade === 1 ? "" : "s"}.`;
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, sans-serif;
+      background: #f4f6f8;
+      color: #17212b;
     }
 
-    entrada.addEventListener("change", async () => {
-      const arquivo = entrada.files[0];
-      if (!arquivo) return;
+    * { box-sizing: border-box; }
 
-      const texto = await arquivo.text();
-      const encontrados = texto.match(/https?:\/\/[^\s<>"']+/gi) || [];
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
 
-      for (const trecho of encontrados) {
-        const semPontuacao = trecho.replace(/[),.;!?]+$/, "");
+    h1 { margin-bottom: 6px; }
+    .intro { color: #52606d; margin-top: 0; }
 
-        try {
-          const endereco = new URL(semPontuacao);
-          if (endereco.protocol === "http:" || endereco.protocol === "https:") {
-            linksSalvos.push(endereco.href);
-          }
-        } catch {
-          // Ignora links inválidos.
+    .panel, .card {
+      background: white;
+      border: 1px solid #dce2e8;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    label { display: block; font-size: 14px; }
+    input, select, button {
+      font: inherit;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid #bbc5ce;
+      background: white;
+      margin-top: 5px;
+    }
+
+    button {
+      border: 0;
+      background: #1769aa;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover { filter: brightness(.92); }
+    button.secondary { background: #e8eef3; color: #17212b; }
+    button.danger { background: #a92b2b; }
+    button.small { padding: 6px 9px; font-size: 14px; }
+
+    .actions, .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .summary { color: #52606d; }
+    .link-title { overflow-wrap: anywhere; font-weight: 600; }
+    .link-title a { color: #075ca8; }
+    .meta { color: #52606d; font-size: 14px; margin: 8px 0; }
+    .badge {
+      display: inline-block;
+      background: #edf2f6;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 13px;
+      margin: 2px 4px 2px 0;
+    }
+    .empty { color: #52606d; text-align: center; padding: 24px; }
+
+    #undoArea { margin: 12px 0; }
+    #undoButton { margin-left: 8px; }
+
+    @media (max-width: 520px) {
+      body { padding: 16px 12px 32px; }
+      .actions > * { flex: 1 1 100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Meus links do WhatsApp</h1>
+  <p class="intro">Importe uma conversa para encontrar e organizar os links.</p>
+
+  <section class="panel">
+    <label for="chatName">Nome da conversa ou grupo</label>
+    <input id="chatName" type="text" placeholder="Ex.: Família, Trabalho">
+
+    <div class="controls">
+      <label for="chatFile">
+        Importar conversa (.txt)
+        <input id="chatFile" type="file" accept=".txt,text/plain">
+      </label>
+
+      <label for="backupFile">
+        Restaurar backup (.json)
+        <input id="backupFile" type="file" accept=".json,application/json">
+      </label>
+    </div>
+
+    <div class="actions" style="margin-top: 12px">
+      <button id="exportButton" type="button">Baixar backup JSON</button>
+      <button id="clearButton" class="danger" type="button">Apagar todos os links</button>
+    </div>
+
+    <p class="meta">A lista fica salva neste navegador. Para usar em outro dispositivo, baixe o backup e guarde-o no Google Drive; depois importe-o no outro dispositivo.</p>
+  </section>
+
+  <section class="panel">
+    <div class="controls">
+      <label for="search">
+        Buscar link
+        <input id="search" type="search" placeholder="Digite parte do endereço ou conversa">
+      </label>
+
+      <label for="filter">
+        Mostrar
+        <select id="filter">
+          <option value="all">Todos os links</option>
+          <option value="favorites">Favoritos</option>
+          <option value="unvisited">Ainda não visitados</option>
+          <option value="repeated">Repetidos</option>
+        </select>
+      </label>
+
+      <label for="sort">
+        Ordenar por
+        <select id="sort">
+          <option value="recent">Importados recentemente</option>
+          <option value="oldest">Importados primeiro</option>
+          <option value="name">Endereço A–Z</option>
+          <option value="count">Mais repetidos</option>
+        </select>
+      </label>
+    </div>
+
+    <p id="summary" class="summary"></p>
+    <div id="undoArea" aria-live="polite"></div>
+    <div id="list"></div>
+  </section>
+
+  <script>
+    const STORAGE_KEY = "whatsapp-links-v2";
+
+    const fileInput = document.querySelector("#chatFile");
+    const backupInput = document.querySelector("#backupFile");
+    const chatNameInput = document.querySelector("#chatName");
+    const searchInput = document.querySelector("#search");
+    const filterInput = document.querySelector("#filter");
+    const sortInput = document.querySelector("#sort");
+    const listElement = document.querySelector("#list");
+    const summaryElement = document.querySelector("#summary");
+    const undoArea = document.querySelector("#undoArea");
+
+    let links = loadLinks();
+    let recentlyDeleted = null;
+    let undoTimer = null;
+
+    function loadLinks() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        return Array.isArray(saved) ? saved : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLinks() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+    }
+
+    function normalizeUrl(raw) {
+      let cleaned = raw.replace(/[),.;!?]+$/g, "");
+      try {
+        const parsed = new URL(cleaned);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+        return parsed.href;
+      } catch {
+        return null;
+      }
+    }
+
+    function addImportedUrl(url, conversation) {
+      const existing = links.find(item => item.url === url);
+
+      if (existing) {
+        existing.count = (Number(existing.count) || 1) + 1;
+        if (conversation && !existing.conversations.includes(conversation)) {
+          existing.conversations.push(conversation);
         }
+      } else {
+        links.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(),
+          url,
+          count: 1,
+          conversations: conversation ? [conversation] : [],
+          importedAt: new Date().toISOString(),
+          favorite: false,
+          visited: false
+        });
+      }
+    }
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const conversation = chatNameInput.value.trim();
+      const text = await file.text();
+      const matches = text.match(/https?:\/\/[^\s<>"']+/gi) || [];
+      let found = 0;
+
+      for (const match of matches) {
+        const url = normalizeUrl(match);
+        if (!url) continue;
+        addImportedUrl(url, conversation);
+        found++;
       }
 
-      linksSalvos = [...new Set(linksSalvos)];
-      localStorage.setItem(chave, JSON.stringify(linksSalvos));
-      mostrarLinks();
-
-      // Permite selecionar o mesmo arquivo novamente.
-      entrada.value = "";
+      saveLinks();
+      render();
+      alert(`${found} ocorrência${found === 1 ? "" : "s"} de link importada${found === 1 ? "" : "s"}.`);
+      fileInput.value = "";
     });
 
-    botaoApagar.addEventListener("click", () => {
-      linksSalvos = [];
-      localStorage.removeItem(chave);
-      mostrarLinks();
+    document.querySelector("#exportButton").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(links, null, 2)], {
+        type: "application/json"
+      });
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = "meus-links-whatsapp.json";
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
     });
 
-    mostrarLinks();
+    backupInput.addEventListener("change", async () => {
+      const file = backupInput.files[0];
+      if (!file) return;
+
+      try {
+        const data = JSON.parse(await file.text());
+        if (!Array.isArray(data)) throw new Error("Formato inválido");
+
+        const byUrl = new Map(links.map(item => [item.url, item]));
+
+        for (const item of data) {
+          const url = typeof item.url === "string" ? normalizeUrl(item.url) : null;
+          if (!url) continue;
+
+          if (byUrl.has(url)) {
+            const current = byUrl.get(url);
+            current.count = Math.max(Number(current.count) || 1, Number(item.count) || 1);
+            current.favorite = Boolean(current.favorite || item.favorite);
+            current.visited = Boolean(current.visited || item.visited);
+            current.conversations = [...new Set([
+              ...(current.conversations || []),
+              ...(Array.isArray(item.conversations) ? item.conversations : [])
+            ])];
+          } else {
+            byUrl.set(url, {
+              id: item.id || String(Date.now()) + Math.random(),
+              url,
+              count: Number(item.count) || 1,
+              conversations: Array.isArray(item.conversations) ? item.conversations : [],
+              importedAt: item.importedAt || new Date().toISOString(),
+              favorite: Boolean(item.favorite),
+              visited: Boolean(item.visited)
+            });
+          }
+        }
+
+        links = [...byUrl.values()];
+        saveLinks();
+        render();
+        alert("Backup importado.");
+      } catch {
+        alert("Não foi possível importar esse arquivo. Selecione um backup JSON válido.");
+      }
+
+      backupInput.value = "";
+    });
+
+    document.querySelector("#clearButton").addEventListener("click", () => {
+      if (!links.length) return;
+      if (!confirm("Apagar todos os links salvos neste navegador?")) return;
+      links = [];
+      saveLinks();
+      render();
+    });
+
+    function removeLink(id) {
+      const index = links.findIndex(item => item.id === id);
+      if (index === -1) return;
+
+      recentlyDeleted = { item: links[index], index };
+      links.splice(index, 1);
+      saveLinks();
+      showUndo();
+      render();
+    }
+
+    function showUndo() {
+      clearTimeout(undoTimer);
+      undoArea.replaceChildren();
+
+      const message = document.createElement("span");
+      message.textContent = "Link removido.";
+
+      const button = document.createElement("button");
+      button.id = "undoButton";
+      button.className = "secondary small";
+      button.textContent = "Desfazer";
+      button.addEventListener("click", () => {
+        if (!recentlyDeleted) return;
+        links.splice(recentlyDeleted.index, 0, recentlyDeleted.item);
+        recentlyDeleted = null;
+        clearTimeout(undoTimer);
+        undoArea.replaceChildren();
+        saveLinks();
+        render();
+      });
+
+      undoArea.append(message, button);
+      undoTimer = setTimeout(() => {
+        recentlyDeleted = null;
+        undoArea.replaceChildren();
+      }, 8000);
+    }
+
+    function render() {
+      const query = searchInput.value.trim().toLowerCase();
+      let shown = links.filter(item => {
+        const conversationText = (item.conversations || []).join(" ").toLowerCase();
+        const matchesSearch = item.url.toLowerCase().includes(query) ||
+          conversationText.includes(query);
+
+        if (!matchesSearch) return false;
+        if (filterInput.value === "favorites" && !item.favorite) return false;
+        if (filterInput.value === "unvisited" && item.visited) return false;
+        if (filterInput.value === "repeated" && (Number(item.count) || 1) < 2) return false;
+        return true;
+      });
+
+      if (sortInput.value === "recent") {
+        shown.sort((a, b) => new Date(b.importedAt) - new Date(a.importedAt));
+      } else if (sortInput.value === "oldest") {
+        shown.sort((a, b) => new Date(a.importedAt) - new Date(b.importedAt));
+      } else if (sortInput.value === "name") {
+        shown.sort((a, b) => a.url.localeCompare(b.url));
+      } else if (sortInput.value === "count") {
+        shown.sort((a, b) => (Number(b.count) || 1) - (Number(a.count) || 1));
+      }
+
+      const totalOccurrences = links.reduce((sum, item) => sum + (Number(item.count) || 1), 0);
+      summaryElement.textContent =
+        `${links.length} link${links.length === 1 ? "" : "s"} único${links.length === 1 ? "" : "s"} · ${totalOccurrences} ocorrência${totalOccurrences === 1 ? "" : "s"} · ${shown.length} exibido${shown.length === 1 ? "" : "s"}`;
+
+      listElement.replaceChildren();
+
+      if (!shown.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = links.length ? "Nenhum link corresponde aos filtros." : "Importe uma conversa para começar.";
+        listElement.append(empty);
+        return;
+      }
+
+      for (const item of shown) {
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const title = document.createElement("div");
+        title.className = "link-title";
+
+        const anchor = document.createElement("a");
+        anchor.href = item.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.textContent = item.url;
+        anchor.addEventListener("click", () => {
+          item.visited = true;
+          saveLinks();
+          setTimeout(render, 0);
+        });
+        title.append(anchor);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `Apareceu ${item.count || 1} vez(es)`;
+
+        for (const conversation of item.conversations || []) {
+          const badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = conversation;
+          meta.append(" ", badge);
+        }
+
+        const status = document.createElement("span");
+        status.className = "badge";
+        status.textContent = item.visited ? "Visitado" : "Não visitado";
+        meta.append(" ", status);
+
+        const actions = document.createElement("div");
+        actions.className = "card-actions";
+
+        const favoriteButton = document.createElement("button");
+        favoriteButton.className = "secondary small";
+        favoriteButton.textContent = item.favorite ? "★ Favorito" : "☆ Favoritar";
+        favoriteButton.addEventListener("click", () => {
+          item.favorite = !item.favorite;
+          saveLinks();
+          render();
+        });
+
+        const visitedButton = document.createElement("button");
+        visitedButton.className = "secondary small";
+        visitedButton.textContent = item.visited ? "Marcar não visitado" : "Marcar visitado";
+        visitedButton.addEventListener("click", () => {
+          item.visited = !item.visited;
+          saveLinks();
+          render();
+        });
+
+        const copyButton = document.createElement("button");
+        copyButton.className = "secondary small";
+        copyButton.textContent = "Copiar link";
+        copyButton.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(item.url);
+            copyButton.textContent = "Copiado!";
+            setTimeout(() => copyButton.textContent = "Copiar link", 1500);
+          } catch {
+            alert("Não foi possível copiar automaticamente. Selecione e copie o endereço.");
+          }
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "danger small";
+        deleteButton.textContent = "Remover";
+        deleteButton.addEventListener("click", () => removeLink(item.id));
+
+        actions.append(favoriteButton, visitedButton, copyButton, deleteButton);
+        card.append(title, meta, actions);
+        listElement.append(card);
+      }
+    }
+
+    searchInput.addEventListener("input", render);
+    filterInput.addEventListener("change", render);
+    sortInput.addEventListener("change", render);
+
+    render();
   </script>
 </body>
 </html>
