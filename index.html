@@ -1,824 +1,556 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WhatsApp Link Organizer 2.0</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Links do WhatsApp</title>
   <style>
-    :root{
-      --bg:#0b1220;
-      --bg2:#0f172a;
-      --panel:rgba(17,26,46,.92);
-      --panel2:#0c1528;
-      --text:#e7eefb;
-      --muted:#8da2c8;
-      --line:#22304d;
-      --accent:#6ea8fe;
-      --accent2:#56d39b;
-      --danger:#ff6b6b;
-      --warn:#ffcc66;
-      --chip:#18233d;
-      --shadow:0 12px 34px rgba(0,0,0,.28);
-      --radius:16px;
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f8;
+      --surface: #fff;
+      --text: #202124;
+      --muted: #687078;
+      --line: #e5e7e9;
+      --accent: #167d62;
+      --accent-light: #e8f4f0;
+      --danger: #b42318;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0}
-    body{
-      font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(110,168,254,.12), transparent 22%),
-        radial-gradient(circle at top right, rgba(86,211,155,.10), transparent 20%),
-        linear-gradient(180deg,#09101d 0%, #0b1220 100%);
-      color:var(--text);
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
     }
-    .app{max-width:1500px;margin:0 auto;padding:20px}
-    .topbar{
-      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
-      margin-bottom:16px
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      padding: 20px 16px;
     }
-    h1{font-size:20px;margin:0}
-    .sub{color:var(--muted);font-size:12px}
-    .grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
-    @media (max-width: 1024px){ .grid{grid-template-columns:1fr} }
-    .panel{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      backdrop-filter: blur(10px);
+
+    .top, main {
+      width: min(920px, 100%);
+      margin: 0 auto;
     }
-    .left,.right{padding:16px}
-    .section-title{
-      font-weight:700;margin:0 0 10px 0;font-size:13px;color:#cfe0ff;letter-spacing:.02em
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
-    .stack{display:grid;gap:10px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input, select, button, textarea{
-      border:1px solid var(--line);
-      background:var(--panel2);
-      color:var(--text);
-      border-radius:12px;
-      padding:10px 12px;
-      font:inherit;
-      outline:none;
+
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: -.02em;
     }
-    input, select, textarea{width:100%}
-    textarea{min-height:110px;resize:vertical}
-    button{cursor:pointer;transition:.16s ease}
-    button:hover{transform:translateY(-1px);border-color:#38558f}
-    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
-    .btn{background:#17233d}
-    .btn-accent{background:linear-gradient(180deg,#2b6cff,#2356cc);border-color:#2b6cff}
-    .btn-green{background:linear-gradient(180deg,#23c483,#169c66);border-color:#23c483}
-    .btn-danger{background:linear-gradient(180deg,#ff6f6f,#d94a4a);border-color:#ff6f6f}
-    .btn-ghost{background:transparent}
-    .small{padding:8px 10px;border-radius:10px;font-size:12px}
-    .muted{color:var(--muted)}
-    .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{
-      display:inline-flex;align-items:center;gap:6px;
-      background:var(--chip);
-      border:1px solid var(--line);
-      color:var(--text);
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      cursor:pointer;
-      user-select:none;
+
+    main { padding: 24px 16px 80px; }
+
+    .panel, .link-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
     }
-    .chip.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(110,168,254,.18) inset}
-    .statbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-    .stat{
-      background:#0d1628;
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
+
+    .panel {
+      padding: 16px;
+      margin-bottom: 18px;
     }
-    .stat span{color:var(--muted);font-size:12px}
-    .stat b{display:block;font-size:18px;margin-top:4px}
-    .toolbar{
-      display:grid;
-      grid-template-columns:1.2fr .85fr .9fr .9fr .9fr;
-      gap:10px;
-      margin-bottom:14px
+
+    .actions, .filters, .card-top, .card-bottom {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 9px;
     }
-    @media (max-width: 1200px){ .toolbar{grid-template-columns:1fr 1fr} }
-    .links{display:grid;gap:12px}
-    .card{
-      background:linear-gradient(180deg, rgba(15,23,42,.98), rgba(11,18,32,.98));
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:14px;
-      overflow:hidden;
+
+    .filters { margin-top: 12px; }
+
+    input, select, button, .file-button {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      padding: 8px 11px;
     }
-    .card-head{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-      margin-bottom:8px
+
+    input:focus, select:focus, button:focus-visible, a:focus-visible {
+      outline: 3px solid #b8e0d3;
+      outline-offset: 1px;
     }
-    .url{
-      word-break:break-all;
-      color:#d8e6ff;
-      text-decoration:none;
-      font-weight:600;
+
+    button, .file-button {
+      cursor: pointer;
     }
-    .url:hover{text-decoration:underline}
-    .meta{color:var(--muted);font-size:12px}
-    .card-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px
+
+    button:hover, .file-button:hover { background: #f7f8f8; }
+
+    button.primary {
+      color: white;
+      background: var(--accent);
+      border-color: var(--accent);
     }
-    .preview{
-      display:grid;
-      grid-template-columns: 112px 1fr;
-      gap:12px;
-      margin-top:12px;
-      background:#0b1323;
-      border:1px solid var(--line);
-      border-radius:14px;
-      overflow:hidden;
+
+    button.primary:hover { background: #126b54; }
+
+    .file-button {
+      display: inline-flex;
+      align-items: center;
     }
-    .preview img{
-      width:112px;height:112px;object-fit:cover;display:block;background:#08101d
+
+    .file-button input { display: none; }
+
+    #search { flex: 1 1 220px; }
+
+    #list { display: grid; gap: 10px; }
+
+    .link-card { padding: 14px; }
+
+    .card-top { justify-content: space-between; }
+
+    .conversation {
+      color: var(--muted);
+      font-size: .88rem;
+      overflow-wrap: anywhere;
     }
-    .preview .pbody{padding:10px}
-    .preview h3{margin:0 0 4px 0;font-size:14px}
-    .preview p{margin:0;color:var(--muted);font-size:12px}
-    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-    .tag{
-      font-size:11px;
-      background:#1b2a49;
-      color:#cfe0ff;
-      border:1px solid #2d4069;
-      padding:4px 8px;
-      border-radius:999px;
-      cursor:pointer;
+
+    .link {
+      display: block;
+      margin: 10px 0;
+      color: var(--accent);
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      text-decoration: none;
     }
-    .badge{
-      font-size:11px;
-      padding:4px 8px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      color:var(--muted);
+
+    .link:hover { text-decoration: underline; }
+
+    .card-bottom {
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: .85rem;
     }
-    .badge.fav{color:#ffe08a;border-color:#7a6430}
-    .badge.repeat{color:#ffb4b4;border-color:#7a3232}
-    .badge.unvisited{color:#9fd6ff;border-color:#305c7a}
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:18px;
-      transform:translateX(-50%);
-      background:#13233f;
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:999px;
-      padding:10px 14px;
-      box-shadow:var(--shadow);
-      display:none;
-      z-index:9999;
-      max-width:min(92vw,720px);
-      text-align:center;
+
+    .card-buttons { display: flex; gap: 6px; }
+
+    .card-buttons button {
+      min-height: 34px;
+      padding: 5px 9px;
+      font-size: .88rem;
     }
-    .undo-bar{
-      position:fixed;
-      left:50%;
-      bottom:66px;
-      transform:translateX(-50%);
-      background:#15233e;
-      border:1px solid var(--line);
-      border-radius:999px;
-      padding:10px 12px;
-      box-shadow:var(--shadow);
-      display:none;
-      align-items:center;
-      gap:10px;
-      z-index:9999;
+
+    .favorite { color: #9a6700; }
+    .visited { opacity: .65; }
+    .visited .link { font-weight: 400; }
+
+    #status, #count, .hint {
+      color: var(--muted);
+      font-size: .9rem;
     }
-    .undo-bar button{padding:6px 10px;border-radius:999px}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width: 720px){ .split{grid-template-columns:1fr} }
-    .footer-note{color:var(--muted);font-size:12px;margin-top:10px}
-    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:11px;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:#0b1323}
-    .empty{
-      padding:24px;
-      text-align:center;
-      color:var(--muted);
-      border:1px dashed #2a3d63;
-      border-radius:16px;
-      background:rgba(11,18,32,.5);
+
+    #count { margin: 0 0 10px; }
+    .hint { margin: 10px 0 0; }
+
+    #undoBar {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(500px, calc(100% - 24px));
+      padding: 12px 14px;
+      background: #222;
+      color: white;
+      border-radius: 10px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 6px 24px #0003;
     }
-    .mini{
-      display:flex;gap:8px;align-items:center;flex-wrap:wrap
+
+    #undoBar button {
+      color: white;
+      background: transparent;
+      border-color: #777;
     }
-    .spinner{
-      width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;
-      animation:spin 1s linear infinite;display:inline-block;vertical-align:middle
+
+    #empty {
+      padding: 32px 12px;
+      text-align: center;
+      color: var(--muted);
     }
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .details{
-      margin-top:10px;
-      padding:10px;
-      border:1px solid var(--line);
-      border-radius:12px;
-      background:#0b1323;
-      color:var(--muted);
-      font-size:12px;
-    }
-    .inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .filebox{
-      border:1px dashed #2a3d63;
-      background:rgba(11,18,32,.45);
-      padding:12px;
-      border-radius:14px;
-    }
-    .count-pill{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:6px 10px;border-radius:999px;
-      background:#0b1323;border:1px solid var(--line);color:var(--muted);font-size:12px
+
+    @media (max-width: 560px) {
+      header { padding: 16px 12px; }
+      main { padding: 16px 12px 80px; }
+      .top { align-items: flex-start; }
+      .top .actions { justify-content: flex-end; }
+      .panel { padding: 12px; }
+      .filters > * { flex: 1 1 130px; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="topbar">
-      <div>
-        <h1>WhatsApp Link Organizer 2.0</h1>
-        <div class="sub">Importe .txt do WhatsApp, organize links, gere backups JSON e busque prévias.</div>
-      </div>
-      <div class="row">
-        <button class="btn small" id="exportBtn">Exportar JSON</button>
-        <label class="btn small" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
-          Importar JSON
-          <input id="importJsonInput" type="file" accept="application/json" hidden>
+  <header>
+    <div class="top">
+      <h1>Links do WhatsApp</h1>
+      <div class="actions">
+        <label class="file-button">
+          Importar .txt
+          <input id="txtInput" type="file" accept=".txt,text/plain" multiple>
         </label>
-        <button class="btn-danger small" id="clearAllBtn">Limpar tudo</button>
+        <button id="exportButton" type="button">Exportar JSON</button>
+        <label class="file-button">
+          Importar JSON
+          <input id="jsonInput" type="file" accept=".json,application/json">
+        </label>
       </div>
     </div>
+  </header>
 
-    <div class="grid">
-      <div class="panel left">
-        <div class="section-title">Importar WhatsApp .txt</div>
-        <div class="stack">
-          <div class="filebox">
-            <input id="txtFile" type="file" accept=".txt,.log,text/plain">
-            <div style="height:10px"></div>
-            <input id="conversationName" placeholder="Nome da conversa (opcional)">
-            <div style="height:10px"></div>
-            <button class="btn-accent" id="importTxtBtn" style="width:100%">Importar links</button>
-          </div>
-
-          <div class="details">
-            Detecta URLs com <b>http://</b> e <b>https://</b>. Remove fragmentos <span class="kbd">#</span> e normaliza URLs para reduzir duplicatas.
-          </div>
-        </div>
-
-        <div style="height:18px"></div>
-        <div class="section-title">Filtros rápidos</div>
-        <div class="chips" id="quickFilters">
-          <span class="chip active" data-filter="all">Todos</span>
-          <span class="chip" data-filter="favorites">Favoritos</span>
-          <span class="chip" data-filter="unvisited">Não visitados</span>
-          <span class="chip" data-filter="repeated">Repetidos</span>
-        </div>
-
-        <div style="height:18px"></div>
-        <div class="section-title">Backup / restauração</div>
-        <div class="split">
-          <button class="btn-green small" id="downloadBackupBtn">Baixar backup</button>
-          <label class="btn small" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
-            Restaurar backup
-            <input id="backupInput" type="file" accept="application/json" hidden>
-          </label>
-        </div>
-
-        <div style="height:18px"></div>
-        <div class="section-title">Resumo</div>
-        <div class="statbar">
-          <div class="stat"><span>Total</span><b id="countTotal">0</b></div>
-          <div class="stat"><span>Favoritos</span><b id="countFav">0</b></div>
-          <div class="stat"><span>Não visitados</span><b id="countUnvisited">0</b></div>
-          <div class="stat"><span>Repetidos</span><b id="countRepeated">0</b></div>
-        </div>
-
-        <div class="footer-note">
-          Dica: use <span class="kbd">Ctrl</span> + <span class="kbd">F</span> na busca para localizar mais rápido.
-        </div>
+  <main>
+    <section class="panel" aria-label="Busca e filtros">
+      <input id="search" type="search" placeholder="Buscar link ou conversa…" aria-label="Buscar">
+      <div class="filters">
+        <select id="filter" aria-label="Filtrar links">
+          <option value="all">Todos os links</option>
+          <option value="favorites">Favoritos</option>
+          <option value="unvisited">Não visitados</option>
+          <option value="repeated">Repetidos</option>
+        </select>
+        <select id="sort" aria-label="Ordenar links">
+          <option value="newest">Mais recentes</option>
+          <option value="oldest">Mais antigos</option>
+          <option value="conversation">Conversa (A–Z)</option>
+          <option value="url">Link (A–Z)</option>
+        </select>
+        <span id="status" role="status"></span>
       </div>
+      <p class="hint">Os dados ficam salvos neste navegador. Use o backup JSON para transferi-los entre dispositivos.</p>
+    </section>
 
-      <div class="panel right">
-        <div class="toolbar">
-          <input id="searchInput" placeholder="Buscar por URL, título, conversa ou tag">
-          <select id="sortSelect">
-            <option value="newest">Mais recentes</option>
-            <option value="oldest">Mais antigos</option>
-            <option value="title">Título</option>
-            <option value="conversation">Conversa</option>
-            <option value="visited">Visitados primeiro</option>
-          </select>
-          <select id="tagFilter">
-            <option value="">Todas as tags</option>
-          </select>
-          <select id="conversationFilter">
-            <option value="">Todas as conversas</option>
-          </select>
-          <button class="btn" id="refreshPreviewsBtn">Atualizar previews</button>
-        </div>
+    <p id="count"></p>
+    <section id="list" aria-live="polite"></section>
+    <div id="empty" hidden>Nenhum link encontrado.</div>
+  </main>
 
-        <div class="mini" style="margin-bottom:12px">
-          <span class="count-pill" id="visibleCount">0 visíveis</span>
-          <span class="count-pill" id="previewState">Worker: não configurado</span>
-        </div>
-
-        <div class="links" id="links"></div>
-      </div>
-    </div>
+  <div id="undoBar" role="status">
+    <span>Link removido.</span>
+    <button id="undoButton" type="button">Desfazer</button>
   </div>
 
-  <div class="undo-bar" id="undoBar">
-    <span id="undoText">Item removido</span>
-    <button class="btn-accent small" id="undoBtn">Desfazer</button>
-    <button class="btn-ghost small" id="dismissUndoBtn">Fechar</button>
-  </div>
+  <script>
+    (() => {
+      "use strict";
 
-  <div class="toast" id="toast"></div>
+      const STORAGE_KEY = "whatsapp-links-v1";
+      const $ = (selector) => document.querySelector(selector);
+      const listEl = $("#list");
+      let links = loadLinks();
+      let undoItem = null;
+      let undoTimer = null;
 
-<script>
-const STORAGE_KEY = "whatsapp_link_organizer_v2";
-const BACKUP_VERSION = 2;
+      function loadLinks() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          return Array.isArray(saved) ? saved.filter(isValidLink) : [];
+        } catch {
+          return [];
+        }
+      }
 
-// Troque pela URL do seu Cloudflare Worker
-const PREVIEW_WORKER_URL = "https://SEU-WORKER.SEU-USUARIO.workers.dev";
-const MAX_AUTOPREVIEW = 12;
+      function isValidLink(item) {
+        return item && typeof item.url === "string" && /^https?:\/\//i.test(item.url);
+      }
 
-let db = loadDB();
-let currentFilter = "all";
-let undoItem = null;
-let previewQueue = [];
-let previewRunning = false;
+      function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+      }
 
-const el = (id) => document.getElementById(id);
+      function cleanUrl(raw) {
+        return raw.replace(/[<>"'“”‘’.,!?;:)\]}]+$/g, "");
+      }
 
-function toast(msg){
-  const t = el("toast");
-  t.textContent = msg;
-  t.style.display = "block";
-  clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => t.style.display = "none", 2400);
-}
+      function extractUrls(text) {
+        const found = text.match(/https?:\/\/[^\s<>"']+/gi) || [];
+        return [...new Set(found.map(cleanUrl).filter(url => /^https?:\/\//i.test(url)))];
+      }
 
-function now(){ return new Date().toISOString(); }
+      function getConversation(line) {
+        // Formato comum do WhatsApp: 12/03/2025, 14:30 - Nome: mensagem
+        const match = line.match(/^\[?\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4},?\s+\d{1,2}:\d{2}(?:\s?[AP]M)?\]?\s+-\s+([^:]+):/i);
+        return match ? match[1].trim() : "Conversa sem nome";
+      }
 
-function loadDB(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return { version: BACKUP_VERSION, items: [] };
-    const parsed = JSON.parse(raw);
-    if(Array.isArray(parsed)) return { version: BACKUP_VERSION, items: parsed };
-    return { version: parsed.version || BACKUP_VERSION, items: Array.isArray(parsed.items) ? parsed.items : [] };
-  }catch{
-    return { version: BACKUP_VERSION, items: [] };
-  }
-}
+      async function importTxt(files) {
+        let added = 0;
+        let skipped = 0;
 
-function saveDB(silent=false){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-  render();
-  if(!silent) updatePreviewState();
-}
+        for (const file of files) {
+          const text = await file.text();
+          const lines = text.split(/\r?\n/);
 
-function safeUUID(){
-  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
-  return "id-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
-function normalizeUrl(url){
-  try{
-    const u = new URL(url.trim());
-    u.hash = "";
-    u.protocol = u.protocol.toLowerCase();
-    u.hostname = u.hostname.toLowerCase();
-    if((u.protocol === "http:" && u.port === "80") || (u.protocol === "https:" && u.port === "443")) u.port = "";
-    if(u.pathname.endsWith("/") && u.pathname !== "/") u.pathname = u.pathname.slice(0,-1);
-    return u.toString();
-  }catch{
-    return url.trim().replace(/\s+/g, "");
-  }
-}
-
-function extractUrls(text){
-  const re = /https?:\/\/[^\s<>"'`()[\]{}]+/gi;
-  const raw = text.match(re) || [];
-  const normalized = raw.map(normalizeUrl);
-  return [...new Set(normalized)];
-}
-
-function detectConversationName(text){
-  const lines = text.split(/\r?\n/).slice(0, 40);
-  const patterns = [
-    /^\s*\[?\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}.*?\]?\s*[-–]?\s*([^:]+):/,
-    /^\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4},?.*?\s*[-–]?\s*([^:]+):/,
-  ];
-  for(const line of lines){
-    for(const p of patterns){
-      const m = line.match(p);
-      if(m && m[1]) return m[1].trim();
-    }
-  }
-  return "";
-}
-
-function parseWhatsAppExport(text){
-  const conversation = detectConversationName(text) || "WhatsApp";
-  const urls = extractUrls(text);
-  return { conversation, urls };
-}
-
-function mergeTags(existing=[], add=[]){
-  const set = new Set(existing);
-  for(const t of add) if(t && t.trim()) set.add(t.trim());
-  return [...set];
-}
-
-function addItems(urls, conversation){
-  const map = new Map(db.items.map(it => [it.url, it]));
-  let added = 0, dup = 0;
-  for(const url of urls){
-    const found = map.get(url);
-    if(found){
-      found.repeatCount = (found.repeatCount || 1) + 1;
-      if(conversation) found.conversations = mergeTags(found.conversations || [], [conversation]);
-      found.updatedAt = now();
-      dup++;
-      continue;
-    }
-    db.items.unshift({
-      id: safeUUID(),
-      url,
-      title: "",
-      description: "",
-      image: "",
-      visited: false,
-      favorite: false,
-      tags: [],
-      conversations: conversation ? [conversation] : [],
-      repeatCount: 1,
-      createdAt: now(),
-      updatedAt: now(),
-      deleted: false
-    });
-    added++;
-  }
-  saveDB(true);
-  toast(`${added} link(s) adicionados${dup ? `, ${dup} duplicado(s) detectado(s)` : ""}.`);
-}
-
-function importTxtFromFile(file, conversationOverride=""){
-  return file.text().then(text => {
-    const parsed = parseWhatsAppExport(text);
-    addItems(parsed.urls, conversationOverride || parsed.conversation);
-  });
-}
-
-function currentItems(){
-  return db.items.filter(x => !x.deleted);
-}
-
-function filteredItems(){
-  const q = el("searchInput").value.trim().toLowerCase();
-  const tag = el("tagFilter").value;
-  const conv = el("conversationFilter").value;
-
-  let items = currentItems();
-
-  if(currentFilter === "favorites") items = items.filter(x => x.favorite);
-  if(currentFilter === "unvisited") items = items.filter(x => !x.visited);
-  if(currentFilter === "repeated") items = items.filter(x => (x.repeatCount || 1) > 1);
-
-  if(q){
-    items = items.filter(x => [
-      x.url, x.title, x.description,
-      ...(x.tags || []),
-      ...(x.conversations || [])
-    ].join(" ").toLowerCase().includes(q));
-  }
-  if(tag) items = items.filter(x => (x.tags || []).includes(tag));
-  if(conv) items = items.filter(x => (x.conversations || []).includes(conv));
-
-  const sort = el("sortSelect").value;
-  items.sort((a,b) => {
-    if(sort === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
-    if(sort === "title") return (a.title || a.url).localeCompare(b.title || b.url);
-    if(sort === "conversation") return ((a.conversations||[])[0]||"").localeCompare((b.conversations||[])[0]||"");
-    if(sort === "visited") return Number(a.visited) - Number(b.visited);
-    return new Date(b.createdAt) - new Date(a.createdAt);
-  });
-  return items;
-}
-
-function updateCounts(){
-  const active = currentItems();
-  el("countTotal").textContent = active.length;
-  el("countFav").textContent = active.filter(x => x.favorite).length;
-  el("countUnvisited").textContent = active.filter(x => !x.visited).length;
-  el("countRepeated").textContent = active.filter(x => (x.repeatCount || 1) > 1).length;
-  el("visibleCount").textContent = `${filteredItems().length} visíveis`;
-}
-
-function updateFilterOptions(){
-  const tags = [...new Set(currentItems().flatMap(x => x.tags || []))].sort((a,b)=>a.localeCompare(b));
-  const convs = [...new Set(currentItems().flatMap(x => x.conversations || []))].sort((a,b)=>a.localeCompare(b));
-
-  const tagSel = el("tagFilter");
-  const convSel = el("conversationFilter");
-  const currentTag = tagSel.value;
-  const currentConv = convSel.value;
-
-  tagSel.innerHTML = `<option value="">Todas as tags</option>` + tags.map(t => `<option ${t===currentTag?"selected":""} value="${escapeAttr(t)}">${escapeHtml(t)}</option>`).join("");
-  convSel.innerHTML = `<option value="">Todas as conversas</option>` + convs.map(c => `<option ${c===currentConv?"selected":""} value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
-}
-
-function updatePreviewState(){
-  const ok = PREVIEW_WORKER_URL && !PREVIEW_WORKER_URL.includes("SEU-WORKER");
-  el("previewState").textContent = ok ? "Worker: configurado" : "Worker: não configurado";
-}
-
-function render(){
-  updateCounts();
-  updateFilterOptions();
-  updatePreviewState();
-
-  const items = filteredItems();
-  const wrap = el("links");
-  wrap.innerHTML = "";
-
-  if(!items.length){
-    wrap.innerHTML = `<div class="empty">Nenhum link encontrado.</div>`;
-    return;
-  }
-
-  items.forEach(item => {
-    const repeated = (item.repeatCount || 1) > 1;
-    const convs = item.conversations || [];
-    const tags = item.tags || [];
-    const hasPreview = !!(item.title || item.description || item.image);
-
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <div class="card-head">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-            ${item.favorite ? `<span class="badge fav">Favorito</span>` : ""}
-            ${item.visited ? `<span class="badge">Visitado</span>` : `<span class="badge unvisited">Não visitado</span>`}
-            ${repeated ? `<span class="badge repeat">Repetido ×${item.repeatCount}</span>` : ""}
-          </div>
-          <a class="url" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title || item.url)}</a>
-          <div class="meta">${escapeHtml(item.url)}</div>
-        </div>
-      </div>
-
-      <div class="meta">${escapeHtml(item.description || "Sem descrição")}</div>
-
-      <div class="tags">
-        ${convs.map(c => `<span class="tag" data-tag="${escapeAttr(c)}">${escapeHtml(c)}</span>`).join("")}
-        ${tags.map(t => `<span class="tag" data-tag="${escapeAttr(t)}">#${escapeHtml(t)}</span>`).join("")}
-      </div>
-
-      <div class="preview" ${hasPreview ? "" : 'style="display:none"'} >
-        ${item.image ? `<img src="${escapeAttr(item.image)}" alt="">` : `<img src="" alt="" style="display:none">`}
-        <div class="pbody">
-          <h3>${escapeHtml(item.title || "Sem título")}</h3>
-          <p>${escapeHtml(item.description || "")}</p>
-        </div>
-      </div>
-
-      <div class="inline-actions">
-        <button class="small btn" data-act="favorite">${item.favorite ? "Desfavoritar" : "Favoritar"}</button>
-        <button class="small btn" data-act="visited">${item.visited ? "Não visitado" : "Visitado"}</button>
-        <button class="small btn" data-act="preview">Buscar preview</button>
-        <button class="small btn" data-act="tag">Adicionar tag</button>
-        <button class="small btn" data-act="conversation">Editar conversa</button>
-        <button class="small btn-danger" data-act="delete">Remover</button>
-      </div>
-    `;
-
-    div.querySelectorAll("button").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const act = btn.dataset.act;
-        if(act === "favorite"){
-          item.favorite = !item.favorite;
-          item.updatedAt = now();
-          saveDB(true);
-        }else if(act === "visited"){
-          item.visited = !item.visited;
-          item.updatedAt = now();
-          saveDB(true);
-        }else if(act === "preview"){
-          await fetchPreview(item);
-        }else if(act === "tag"){
-          const tag = prompt("Nova tag:");
-          if(tag && tag.trim()){
-            item.tags = mergeTags(item.tags || [], [tag.trim()]);
-            item.updatedAt = now();
-            saveDB(true);
-          }
-        }else if(act === "conversation"){
-          const value = prompt("Nome da conversa:", (item.conversations || [])[0] || "");
-          if(value && value.trim()){
-            item.conversations = mergeTags(item.conversations || [], [value.trim()]);
-            item.updatedAt = now();
-            saveDB(true);
-          }
-        }else if(act === "delete"){
-          if(confirm("Remover este link? Você poderá desfazer.")){
-            item.deleted = true;
-            item.updatedAt = now();
-            undoItem = structuredClone(item);
-            saveDB(true);
-            showUndo();
+          for (const line of lines) {
+            const conversation = getConversation(line);
+            for (const url of extractUrls(line)) {
+              const key = normalizeUrl(url);
+              if (links.some(item => normalizeUrl(item.url) === key)) {
+                skipped++;
+                continue;
+              }
+              links.push({
+                id: makeId(),
+                url,
+                conversation: file.name.replace(/\.txt$/i, "") === file.name
+                  ? conversation
+                  : conversation,
+                favorite: false,
+                visited: false,
+                createdAt: Date.now()
+              });
+              added++;
+            }
           }
         }
-      });
-    });
 
-    div.querySelectorAll(".tag").forEach(tagEl => {
-      tagEl.addEventListener("click", () => {
-        const value = tagEl.dataset.tag;
-        el("searchInput").value = value;
+        save();
+        render();
+        setStatus(`${added} link(s) importado(s); ${skipped} duplicado(s) ignorado(s).`);
+      }
+
+      function normalizeUrl(url) {
+        try {
+          const parsed = new URL(url);
+          parsed.hash = "";
+          return parsed.href.replace(/\/$/, "").toLowerCase();
+        } catch {
+          return url.toLowerCase();
+        }
+      }
+
+      function makeId() {
+        return globalThis.crypto?.randomUUID?.() ||
+          `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function setStatus(message) {
+        $("#status").textContent = message;
+        window.setTimeout(() => {
+          if ($("#status").textContent === message) $("#status").textContent = "";
+        }, 5000);
+      }
+
+      function render() {
+        const query = $("#search").value.trim().toLowerCase();
+        const filter = $("#filter").value;
+        const sort = $("#sort").value;
+        const repeated = new Set();
+
+        const counts = new Map();
+        for (const item of links) {
+          const key = normalizeUrl(item.url);
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        for (const [key, count] of counts) if (count > 1) repeated.add(key);
+
+        let shown = links.filter(item => {
+          const matchesQuery = !query ||
+            item.url.toLowerCase().includes(query) ||
+            (item.conversation || "").toLowerCase().includes(query);
+
+          if (!matchesQuery) return false;
+          if (filter === "favorites" && !item.favorite) return false;
+          if (filter === "unvisited" && item.visited) return false;
+          if (filter === "repeated" && !repeated.has(normalizeUrl(item.url))) return false;
+          return true;
+        });
+
+        shown.sort((a, b) => {
+          if (sort === "oldest") return a.createdAt - b.createdAt;
+          if (sort === "conversation") return (a.conversation || "").localeCompare(b.conversation || "");
+          if (sort === "url") return a.url.localeCompare(b.url);
+          return b.createdAt - a.createdAt;
+        });
+
+        listEl.replaceChildren();
+        $("#count").textContent = `${shown.length} de ${links.length} link(s)`;
+
+        for (const item of shown) {
+          const card = document.createElement("article");
+          card.className = `link-card${item.visited ? " visited" : ""}`;
+
+          const top = document.createElement("div");
+          top.className = "card-top";
+
+          const conversation = document.createElement("span");
+          conversation.className = "conversation";
+          conversation.textContent = item.conversation || "Conversa sem nome";
+
+          const repeatLabel = repeated.has(normalizeUrl(item.url))
+            ? document.createElement("span")
+            : null;
+          if (repeatLabel) {
+            repeatLabel.className = "conversation";
+            repeatLabel.textContent = "Repetido";
+          }
+          top.append(conversation);
+          if (repeatLabel) top.append(repeatLabel);
+
+          const anchor = document.createElement("a");
+          anchor.className = "link";
+          anchor.href = item.url;
+          anchor.target = "_blank";
+          anchor.rel = "noopener noreferrer";
+          anchor.textContent = item.url;
+          anchor.addEventListener("click", () => {
+            item.visited = true;
+            save();
+            window.setTimeout(render, 0);
+          });
+
+          const bottom = document.createElement("div");
+          bottom.className = "card-bottom";
+
+          const date = document.createElement("span");
+          date.textContent = item.visited ? "Visitado" : "Não visitado";
+
+          const buttons = document.createElement("div");
+          buttons.className = "card-buttons";
+
+          const favorite = document.createElement("button");
+          favorite.type = "button";
+          favorite.className = item.favorite ? "favorite" : "";
+          favorite.textContent = item.favorite ? "★ Favorito" : "☆ Favorito";
+          favorite.setAttribute("aria-pressed", String(Boolean(item.favorite)));
+          favorite.addEventListener("click", () => {
+            item.favorite = !item.favorite;
+            save();
+            render();
+          });
+
+          const visited = document.createElement("button");
+          visited.type = "button";
+          visited.textContent = item.visited ? "Marcar não visitado" : "Marcar visitado";
+          visited.addEventListener("click", () => {
+            item.visited = !item.visited;
+            save();
+            render();
+          });
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "Remover";
+          remove.addEventListener("click", () => removeLink(item.id));
+
+          buttons.append(favorite, visited, remove);
+          bottom.append(date, buttons);
+          card.append(top, anchor, bottom);
+          listEl.append(card);
+        }
+
+        $("#empty").hidden = shown.length > 0;
+      }
+
+      function removeLink(id) {
+        const index = links.findIndex(item => item.id === id);
+        if (index < 0) return;
+        undoItem = { item: links[index], index };
+        links.splice(index, 1);
+        save();
+        render();
+
+        const bar = $("#undoBar");
+        bar.style.display = "flex";
+        clearTimeout(undoTimer);
+        undoTimer = window.setTimeout(() => {
+          bar.style.display = "none";
+          undoItem = null;
+        }, 6000);
+      }
+
+      $("#undoButton").addEventListener("click", () => {
+        if (!undoItem) return;
+        links.splice(Math.min(undoItem.index, links.length), 0, undoItem.item);
+        undoItem = null;
+        clearTimeout(undoTimer);
+        $("#undoBar").style.display = "none";
+        save();
         render();
       });
-    });
 
-    wrap.appendChild(div);
-  });
-}
+      $("#txtInput").addEventListener("change", async event => {
+        const files = [...event.target.files];
+        if (!files.length) return;
+        try {
+          await importTxt(files);
+        } catch {
+          setStatus("Não foi possível ler um dos arquivos.");
+        }
+        event.target.value = "";
+      });
 
-let undoTimer = null;
-function showUndo(){
-  const bar = el("undoBar");
-  const txt = el("undoText");
-  txt.textContent = "Item removido";
-  bar.style.display = "inline-flex";
-  clearTimeout(undoTimer);
-  undoTimer = setTimeout(() => {
-    bar.style.display = "none";
-    undoItem = null;
-  }, 7000);
-}
+      $("#exportButton").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(links, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "backup-links-whatsapp.json";
+        anchor.click();
+        URL.revokeObjectURL(url);
+      });
 
-function hideUndo(){
-  el("undoBar").style.display = "none";
-  clearTimeout(undoTimer);
-  undoItem = null;
-}
+      $("#jsonInput").addEventListener("change", async event => {
+        const file = event.target.files[0];
+        if (!file) return;
 
-el("undoBtn").addEventListener("click", () => {
-  if(!undoItem) return;
-  const idx = db.items.findIndex(x => x.id === undoItem.id);
-  if(idx >= 0){
-    db.items[idx].deleted = false;
-    db.items[idx].updatedAt = now();
-    saveDB(true);
-    toast("Remoção desfeita.");
-  }
-  hideUndo();
-});
+        try {
+          const imported = JSON.parse(await file.text());
+          if (!Array.isArray(imported) || !imported.every(isValidLink)) {
+            throw new Error("Formato inválido");
+          }
 
-el("dismissUndoBtn").addEventListener("click", hideUndo);
+          const existing = new Set(links.map(item => normalizeUrl(item.url)));
+          let added = 0;
 
-async function fetchPreview(item){
-  if(!PREVIEW_WORKER_URL || PREVIEW_WORKER_URL.includes("SEU-WORKER")){
-    toast("Configure a URL do Worker primeiro.");
-    return;
-  }
-  try{
-    el("refreshPreviewsBtn").disabled = true;
-    toast("Buscando preview...");
-    const res = await fetch(`${PREVIEW_WORKER_URL}?url=${encodeURIComponent(item.url)}`);
-    if(!res.ok) throw new Error("Worker indisponível");
-    const data = await res.json();
-    item.title = data.title || item.title || "";
-    item.description = data.description || item.description || "";
-    item.image = data.image || item.image || "";
-    item.updatedAt = now();
-    saveDB(true);
-    toast("Preview atualizado.");
-  }catch(e){
-    toast("Falha ao buscar preview.");
-  }finally{
-    el("refreshPreviewsBtn").disabled = false;
-  }
-}
+          for (const item of imported) {
+            const key = normalizeUrl(item.url);
+            if (existing.has(key)) continue;
+            links.push({
+              id: makeId(),
+              url: item.url,
+              conversation: typeof item.conversation === "string" ? item.conversation : "Conversa sem nome",
+              favorite: Boolean(item.favorite),
+              visited: Boolean(item.visited),
+              createdAt: Number(item.createdAt) || Date.now()
+            });
+            existing.add(key);
+            added++;
+          }
 
-async function runPreviewQueue(){
-  if(previewRunning) return;
-  previewRunning = true;
-  const items = filteredItems().filter(x => !x.title || !x.description || !x.image).slice(0, MAX_AUTOPREVIEW);
-  previewQueue = items;
-  while(previewQueue.length){
-    const item = previewQueue.shift();
-    await fetchPreview(item);
-    await sleep(250);
-  }
-  previewRunning = false;
-}
+          save();
+          render();
+          setStatus(`${added} link(s) importado(s) do backup.`);
+        } catch {
+          setStatus("Arquivo JSON inválido ou incompatível.");
+        }
 
-function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+        event.target.value = "";
+      });
 
-function escapeHtml(s=""){
-  return String(s).replace(/[&<>";'"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
-}
-function escapeAttr(s=""){ return escapeHtml(s); }
+      $("#search").addEventListener("input", render);
+      $("#filter").addEventListener("change", render);
+      $("#sort").addEventListener("change", render);
 
-el("importTxtBtn").addEventListener("click", async () => {
-  const file = el("txtFile").files[0];
-  if(!file){ toast("Selecione um arquivo .txt."); return; }
-  const conv = el("conversationName").value.trim();
-  await importTxtFromFile(file, conv);
-});
-
-el("exportBtn").addEventListener("click", () => {
-  const data = JSON.stringify(db, null, 2);
-  const blob = new Blob([data], { type:"application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `whatsapp-links-backup-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-
-el("downloadBackupBtn").addEventListener("click", () => el("exportBtn").click());
-
-function importBackupText(text){
-  const parsed = JSON.parse(text);
-  if(Array.isArray(parsed.items)){
-    db = { version: parsed.version || BACKUP_VERSION, items: parsed.items };
-    saveDB(true);
-    toast("Backup restaurado.");
-    return;
-  }
-  if(Array.isArray(parsed)){
-    db = { version: BACKUP_VERSION, items: parsed };
-    saveDB(true);
-    toast("Backup restaurado.");
-    return;
-  }
-  throw new Error("Formato inválido");
-}
-
-el("backupInput").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
-  try{
-    importBackupText(await file.text());
-  }catch{
-    toast("Arquivo de backup inválido.");
-  }
-});
-
-el("importJsonInput").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
-  try{
-    importBackupText(await file.text());
-  }catch{
-    toast("JSON inválido.");
-  }
-});
-
-el("clearAllBtn").addEventListener("click", () => {
-  if(confirm("Apagar todos os links salvos?")){
-    db = { version: BACKUP_VERSION, items: [] };
-    saveDB(true);
-    toast("Dados apagados.");
-  }
-});
-
-el("refreshPreviewsBtn").addEventListener("click", runPreviewQueue);
-el("searchInput").addEventListener("input", render);
-el("sortSelect").addEventListener("change", render);
-el("tagFilter").addEventListener("change", render);
-el("conversationFilter").addEventListener("change", render);
-
-document.getElementById("quickFilters").addEventListener("click", (e) => {
-  const chip = e.target.closest(".chip");
-  if(!chip) return;
-  document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
-  chip.classList.add("active");
-  currentFilter = chip.dataset.filter;
-  render();
-});
-
-function updateUI(){
-  render();
-}
-updateUI();
-</script>
+      render();
+    })();
+  </script>
 </body>
 </html>
