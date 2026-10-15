@@ -1,475 +1,824 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Meus links do WhatsApp</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WhatsApp Link Organizer 2.0</title>
   <style>
-    :root {
-      color-scheme: light;
-      font-family: system-ui, sans-serif;
-      background: #f4f6f8;
-      color: #17212b;
+    :root{
+      --bg:#0b1220;
+      --bg2:#0f172a;
+      --panel:rgba(17,26,46,.92);
+      --panel2:#0c1528;
+      --text:#e7eefb;
+      --muted:#8da2c8;
+      --line:#22304d;
+      --accent:#6ea8fe;
+      --accent2:#56d39b;
+      --danger:#ff6b6b;
+      --warn:#ffcc66;
+      --chip:#18233d;
+      --shadow:0 12px 34px rgba(0,0,0,.28);
+      --radius:16px;
     }
-
-    * { box-sizing: border-box; }
-
-    body {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 24px 16px 48px;
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(110,168,254,.12), transparent 22%),
+        radial-gradient(circle at top right, rgba(86,211,155,.10), transparent 20%),
+        linear-gradient(180deg,#09101d 0%, #0b1220 100%);
+      color:var(--text);
     }
-
-    h1 { margin-bottom: 6px; }
-    .intro { color: #52606d; margin-top: 0; }
-
-    .panel, .card {
-      background: white;
-      border: 1px solid #dce2e8;
-      border-radius: 12px;
-      padding: 16px;
-      margin: 16px 0;
+    .app{max-width:1500px;margin:0 auto;padding:20px}
+    .topbar{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+      margin-bottom:16px
     }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 12px;
-      margin-top: 14px;
+    h1{font-size:20px;margin:0}
+    .sub{color:var(--muted);font-size:12px}
+    .grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
+    @media (max-width: 1024px){ .grid{grid-template-columns:1fr} }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px);
     }
-
-    label { display: block; font-size: 14px; }
-    input, select, button {
-      font: inherit;
-      border-radius: 8px;
-      padding: 10px;
+    .left,.right{padding:16px}
+    .section-title{
+      font-weight:700;margin:0 0 10px 0;font-size:13px;color:#cfe0ff;letter-spacing:.02em
     }
-
-    input, select {
-      width: 100%;
-      border: 1px solid #bbc5ce;
-      background: white;
-      margin-top: 5px;
+    .stack{display:grid;gap:10px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input, select, button, textarea{
+      border:1px solid var(--line);
+      background:var(--panel2);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      font:inherit;
+      outline:none;
     }
-
-    button {
-      border: 0;
-      background: #1769aa;
-      color: white;
-      cursor: pointer;
+    input, select, textarea{width:100%}
+    textarea{min-height:110px;resize:vertical}
+    button{cursor:pointer;transition:.16s ease}
+    button:hover{transform:translateY(-1px);border-color:#38558f}
+    button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .btn{background:#17233d}
+    .btn-accent{background:linear-gradient(180deg,#2b6cff,#2356cc);border-color:#2b6cff}
+    .btn-green{background:linear-gradient(180deg,#23c483,#169c66);border-color:#23c483}
+    .btn-danger{background:linear-gradient(180deg,#ff6f6f,#d94a4a);border-color:#ff6f6f}
+    .btn-ghost{background:transparent}
+    .small{padding:8px 10px;border-radius:10px;font-size:12px}
+    .muted{color:var(--muted)}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{
+      display:inline-flex;align-items:center;gap:6px;
+      background:var(--chip);
+      border:1px solid var(--line);
+      color:var(--text);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
     }
-
-    button:hover { filter: brightness(.92); }
-    button.secondary { background: #e8eef3; color: #17212b; }
-    button.danger { background: #a92b2b; }
-    button.small { padding: 6px 9px; font-size: 14px; }
-
-    .actions, .card-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
+    .chip.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(110,168,254,.18) inset}
+    .statbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+    .stat{
+      background:#0d1628;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
     }
-
-    .summary { color: #52606d; }
-    .link-title { overflow-wrap: anywhere; font-weight: 600; }
-    .link-title a { color: #075ca8; }
-    .meta { color: #52606d; font-size: 14px; margin: 8px 0; }
-    .badge {
-      display: inline-block;
-      background: #edf2f6;
-      border-radius: 999px;
-      padding: 3px 9px;
-      font-size: 13px;
-      margin: 2px 4px 2px 0;
+    .stat span{color:var(--muted);font-size:12px}
+    .stat b{display:block;font-size:18px;margin-top:4px}
+    .toolbar{
+      display:grid;
+      grid-template-columns:1.2fr .85fr .9fr .9fr .9fr;
+      gap:10px;
+      margin-bottom:14px
     }
-    .empty { color: #52606d; text-align: center; padding: 24px; }
-
-    #undoArea { margin: 12px 0; }
-    #undoButton { margin-left: 8px; }
-
-    @media (max-width: 520px) {
-      body { padding: 16px 12px 32px; }
-      .actions > * { flex: 1 1 100%; }
+    @media (max-width: 1200px){ .toolbar{grid-template-columns:1fr 1fr} }
+    .links{display:grid;gap:12px}
+    .card{
+      background:linear-gradient(180deg, rgba(15,23,42,.98), rgba(11,18,32,.98));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      overflow:hidden;
+    }
+    .card-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      margin-bottom:8px
+    }
+    .url{
+      word-break:break-all;
+      color:#d8e6ff;
+      text-decoration:none;
+      font-weight:600;
+    }
+    .url:hover{text-decoration:underline}
+    .meta{color:var(--muted);font-size:12px}
+    .card-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px
+    }
+    .preview{
+      display:grid;
+      grid-template-columns: 112px 1fr;
+      gap:12px;
+      margin-top:12px;
+      background:#0b1323;
+      border:1px solid var(--line);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .preview img{
+      width:112px;height:112px;object-fit:cover;display:block;background:#08101d
+    }
+    .preview .pbody{padding:10px}
+    .preview h3{margin:0 0 4px 0;font-size:14px}
+    .preview p{margin:0;color:var(--muted);font-size:12px}
+    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .tag{
+      font-size:11px;
+      background:#1b2a49;
+      color:#cfe0ff;
+      border:1px solid #2d4069;
+      padding:4px 8px;
+      border-radius:999px;
+      cursor:pointer;
+    }
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--muted);
+    }
+    .badge.fav{color:#ffe08a;border-color:#7a6430}
+    .badge.repeat{color:#ffb4b4;border-color:#7a3232}
+    .badge.unvisited{color:#9fd6ff;border-color:#305c7a}
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:18px;
+      transform:translateX(-50%);
+      background:#13233f;
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:10px 14px;
+      box-shadow:var(--shadow);
+      display:none;
+      z-index:9999;
+      max-width:min(92vw,720px);
+      text-align:center;
+    }
+    .undo-bar{
+      position:fixed;
+      left:50%;
+      bottom:66px;
+      transform:translateX(-50%);
+      background:#15233e;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:10px 12px;
+      box-shadow:var(--shadow);
+      display:none;
+      align-items:center;
+      gap:10px;
+      z-index:9999;
+    }
+    .undo-bar button{padding:6px 10px;border-radius:999px}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 720px){ .split{grid-template-columns:1fr} }
+    .footer-note{color:var(--muted);font-size:12px;margin-top:10px}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:11px;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:#0b1323}
+    .empty{
+      padding:24px;
+      text-align:center;
+      color:var(--muted);
+      border:1px dashed #2a3d63;
+      border-radius:16px;
+      background:rgba(11,18,32,.5);
+    }
+    .mini{
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap
+    }
+    .spinner{
+      width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;
+      animation:spin 1s linear infinite;display:inline-block;vertical-align:middle
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .details{
+      margin-top:10px;
+      padding:10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#0b1323;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .filebox{
+      border:1px dashed #2a3d63;
+      background:rgba(11,18,32,.45);
+      padding:12px;
+      border-radius:14px;
+    }
+    .count-pill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;
+      background:#0b1323;border:1px solid var(--line);color:var(--muted);font-size:12px
     }
   </style>
 </head>
-
 <body>
-  <h1>Meus links do WhatsApp</h1>
-  <p class="intro">Importe uma conversa para encontrar e organizar os links.</p>
-
-  <section class="panel">
-    <label for="chatName">Nome da conversa ou grupo</label>
-    <input id="chatName" type="text" placeholder="Ex.: Família, Trabalho">
-
-    <div class="controls">
-      <label for="chatFile">
-        Importar conversa (.txt)
-        <input id="chatFile" type="file" accept=".txt,text/plain">
-      </label>
-
-      <label for="backupFile">
-        Restaurar backup (.json)
-        <input id="backupFile" type="file" accept=".json,application/json">
-      </label>
+  <div class="app">
+    <div class="topbar">
+      <div>
+        <h1>WhatsApp Link Organizer 2.0</h1>
+        <div class="sub">Importe .txt do WhatsApp, organize links, gere backups JSON e busque prévias.</div>
+      </div>
+      <div class="row">
+        <button class="btn small" id="exportBtn">Exportar JSON</button>
+        <label class="btn small" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
+          Importar JSON
+          <input id="importJsonInput" type="file" accept="application/json" hidden>
+        </label>
+        <button class="btn-danger small" id="clearAllBtn">Limpar tudo</button>
+      </div>
     </div>
 
-    <div class="actions" style="margin-top: 12px">
-      <button id="exportButton" type="button">Baixar backup JSON</button>
-      <button id="clearButton" class="danger" type="button">Apagar todos os links</button>
+    <div class="grid">
+      <div class="panel left">
+        <div class="section-title">Importar WhatsApp .txt</div>
+        <div class="stack">
+          <div class="filebox">
+            <input id="txtFile" type="file" accept=".txt,.log,text/plain">
+            <div style="height:10px"></div>
+            <input id="conversationName" placeholder="Nome da conversa (opcional)">
+            <div style="height:10px"></div>
+            <button class="btn-accent" id="importTxtBtn" style="width:100%">Importar links</button>
+          </div>
+
+          <div class="details">
+            Detecta URLs com <b>http://</b> e <b>https://</b>. Remove fragmentos <span class="kbd">#</span> e normaliza URLs para reduzir duplicatas.
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+        <div class="section-title">Filtros rápidos</div>
+        <div class="chips" id="quickFilters">
+          <span class="chip active" data-filter="all">Todos</span>
+          <span class="chip" data-filter="favorites">Favoritos</span>
+          <span class="chip" data-filter="unvisited">Não visitados</span>
+          <span class="chip" data-filter="repeated">Repetidos</span>
+        </div>
+
+        <div style="height:18px"></div>
+        <div class="section-title">Backup / restauração</div>
+        <div class="split">
+          <button class="btn-green small" id="downloadBackupBtn">Baixar backup</button>
+          <label class="btn small" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+            Restaurar backup
+            <input id="backupInput" type="file" accept="application/json" hidden>
+          </label>
+        </div>
+
+        <div style="height:18px"></div>
+        <div class="section-title">Resumo</div>
+        <div class="statbar">
+          <div class="stat"><span>Total</span><b id="countTotal">0</b></div>
+          <div class="stat"><span>Favoritos</span><b id="countFav">0</b></div>
+          <div class="stat"><span>Não visitados</span><b id="countUnvisited">0</b></div>
+          <div class="stat"><span>Repetidos</span><b id="countRepeated">0</b></div>
+        </div>
+
+        <div class="footer-note">
+          Dica: use <span class="kbd">Ctrl</span> + <span class="kbd">F</span> na busca para localizar mais rápido.
+        </div>
+      </div>
+
+      <div class="panel right">
+        <div class="toolbar">
+          <input id="searchInput" placeholder="Buscar por URL, título, conversa ou tag">
+          <select id="sortSelect">
+            <option value="newest">Mais recentes</option>
+            <option value="oldest">Mais antigos</option>
+            <option value="title">Título</option>
+            <option value="conversation">Conversa</option>
+            <option value="visited">Visitados primeiro</option>
+          </select>
+          <select id="tagFilter">
+            <option value="">Todas as tags</option>
+          </select>
+          <select id="conversationFilter">
+            <option value="">Todas as conversas</option>
+          </select>
+          <button class="btn" id="refreshPreviewsBtn">Atualizar previews</button>
+        </div>
+
+        <div class="mini" style="margin-bottom:12px">
+          <span class="count-pill" id="visibleCount">0 visíveis</span>
+          <span class="count-pill" id="previewState">Worker: não configurado</span>
+        </div>
+
+        <div class="links" id="links"></div>
+      </div>
     </div>
+  </div>
 
-    <p class="meta">A lista fica salva neste navegador. Para usar em outro dispositivo, baixe o backup e guarde-o no Google Drive; depois importe-o no outro dispositivo.</p>
-  </section>
+  <div class="undo-bar" id="undoBar">
+    <span id="undoText">Item removido</span>
+    <button class="btn-accent small" id="undoBtn">Desfazer</button>
+    <button class="btn-ghost small" id="dismissUndoBtn">Fechar</button>
+  </div>
 
-  <section class="panel">
-    <div class="controls">
-      <label for="search">
-        Buscar link
-        <input id="search" type="search" placeholder="Digite parte do endereço ou conversa">
-      </label>
+  <div class="toast" id="toast"></div>
 
-      <label for="filter">
-        Mostrar
-        <select id="filter">
-          <option value="all">Todos os links</option>
-          <option value="favorites">Favoritos</option>
-          <option value="unvisited">Ainda não visitados</option>
-          <option value="repeated">Repetidos</option>
-        </select>
-      </label>
+<script>
+const STORAGE_KEY = "whatsapp_link_organizer_v2";
+const BACKUP_VERSION = 2;
 
-      <label for="sort">
-        Ordenar por
-        <select id="sort">
-          <option value="recent">Importados recentemente</option>
-          <option value="oldest">Importados primeiro</option>
-          <option value="name">Endereço A–Z</option>
-          <option value="count">Mais repetidos</option>
-        </select>
-      </label>
-    </div>
+// Troque pela URL do seu Cloudflare Worker
+const PREVIEW_WORKER_URL = "https://SEU-WORKER.SEU-USUARIO.workers.dev";
+const MAX_AUTOPREVIEW = 12;
 
-    <p id="summary" class="summary"></p>
-    <div id="undoArea" aria-live="polite"></div>
-    <div id="list"></div>
-  </section>
+let db = loadDB();
+let currentFilter = "all";
+let undoItem = null;
+let previewQueue = [];
+let previewRunning = false;
 
-  <script>
-    const STORAGE_KEY = "whatsapp-links-v2";
+const el = (id) => document.getElementById(id);
 
-    const fileInput = document.querySelector("#chatFile");
-    const backupInput = document.querySelector("#backupFile");
-    const chatNameInput = document.querySelector("#chatName");
-    const searchInput = document.querySelector("#search");
-    const filterInput = document.querySelector("#filter");
-    const sortInput = document.querySelector("#sort");
-    const listElement = document.querySelector("#list");
-    const summaryElement = document.querySelector("#summary");
-    const undoArea = document.querySelector("#undoArea");
+function toast(msg){
+  const t = el("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => t.style.display = "none", 2400);
+}
 
-    let links = loadLinks();
-    let recentlyDeleted = null;
-    let undoTimer = null;
+function now(){ return new Date().toISOString(); }
 
-    function loadLinks() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        return Array.isArray(saved) ? saved : [];
-      } catch {
-        return [];
-      }
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return { version: BACKUP_VERSION, items: [] };
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed)) return { version: BACKUP_VERSION, items: parsed };
+    return { version: parsed.version || BACKUP_VERSION, items: Array.isArray(parsed.items) ? parsed.items : [] };
+  }catch{
+    return { version: BACKUP_VERSION, items: [] };
+  }
+}
+
+function saveDB(silent=false){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  render();
+  if(!silent) updatePreviewState();
+}
+
+function safeUUID(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function normalizeUrl(url){
+  try{
+    const u = new URL(url.trim());
+    u.hash = "";
+    u.protocol = u.protocol.toLowerCase();
+    u.hostname = u.hostname.toLowerCase();
+    if((u.protocol === "http:" && u.port === "80") || (u.protocol === "https:" && u.port === "443")) u.port = "";
+    if(u.pathname.endsWith("/") && u.pathname !== "/") u.pathname = u.pathname.slice(0,-1);
+    return u.toString();
+  }catch{
+    return url.trim().replace(/\s+/g, "");
+  }
+}
+
+function extractUrls(text){
+  const re = /https?:\/\/[^\s<>"'`()[\]{}]+/gi;
+  const raw = text.match(re) || [];
+  const normalized = raw.map(normalizeUrl);
+  return [...new Set(normalized)];
+}
+
+function detectConversationName(text){
+  const lines = text.split(/\r?\n/).slice(0, 40);
+  const patterns = [
+    /^\s*\[?\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}.*?\]?\s*[-–]?\s*([^:]+):/,
+    /^\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4},?.*?\s*[-–]?\s*([^:]+):/,
+  ];
+  for(const line of lines){
+    for(const p of patterns){
+      const m = line.match(p);
+      if(m && m[1]) return m[1].trim();
     }
+  }
+  return "";
+}
 
-    function saveLinks() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+function parseWhatsAppExport(text){
+  const conversation = detectConversationName(text) || "WhatsApp";
+  const urls = extractUrls(text);
+  return { conversation, urls };
+}
+
+function mergeTags(existing=[], add=[]){
+  const set = new Set(existing);
+  for(const t of add) if(t && t.trim()) set.add(t.trim());
+  return [...set];
+}
+
+function addItems(urls, conversation){
+  const map = new Map(db.items.map(it => [it.url, it]));
+  let added = 0, dup = 0;
+  for(const url of urls){
+    const found = map.get(url);
+    if(found){
+      found.repeatCount = (found.repeatCount || 1) + 1;
+      if(conversation) found.conversations = mergeTags(found.conversations || [], [conversation]);
+      found.updatedAt = now();
+      dup++;
+      continue;
     }
-
-    function normalizeUrl(raw) {
-      let cleaned = raw.replace(/[),.;!?]+$/g, "");
-      try {
-        const parsed = new URL(cleaned);
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-        return parsed.href;
-      } catch {
-        return null;
-      }
-    }
-
-    function addImportedUrl(url, conversation) {
-      const existing = links.find(item => item.url === url);
-
-      if (existing) {
-        existing.count = (Number(existing.count) || 1) + 1;
-        if (conversation && !existing.conversations.includes(conversation)) {
-          existing.conversations.push(conversation);
-        }
-      } else {
-        links.push({
-          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(),
-          url,
-          count: 1,
-          conversations: conversation ? [conversation] : [],
-          importedAt: new Date().toISOString(),
-          favorite: false,
-          visited: false
-        });
-      }
-    }
-
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-
-      const conversation = chatNameInput.value.trim();
-      const text = await file.text();
-      const matches = text.match(/https?:\/\/[^\s<>"']+/gi) || [];
-      let found = 0;
-
-      for (const match of matches) {
-        const url = normalizeUrl(match);
-        if (!url) continue;
-        addImportedUrl(url, conversation);
-        found++;
-      }
-
-      saveLinks();
-      render();
-      alert(`${found} ocorrência${found === 1 ? "" : "s"} de link importada${found === 1 ? "" : "s"}.`);
-      fileInput.value = "";
+    db.items.unshift({
+      id: safeUUID(),
+      url,
+      title: "",
+      description: "",
+      image: "",
+      visited: false,
+      favorite: false,
+      tags: [],
+      conversations: conversation ? [conversation] : [],
+      repeatCount: 1,
+      createdAt: now(),
+      updatedAt: now(),
+      deleted: false
     });
+    added++;
+  }
+  saveDB(true);
+  toast(`${added} link(s) adicionados${dup ? `, ${dup} duplicado(s) detectado(s)` : ""}.`);
+}
 
-    document.querySelector("#exportButton").addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(links, null, 2)], {
-        type: "application/json"
-      });
-      const downloadUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = downloadUrl;
-      anchor.download = "meus-links-whatsapp.json";
-      anchor.click();
-      URL.revokeObjectURL(downloadUrl);
-    });
+function importTxtFromFile(file, conversationOverride=""){
+  return file.text().then(text => {
+    const parsed = parseWhatsAppExport(text);
+    addItems(parsed.urls, conversationOverride || parsed.conversation);
+  });
+}
 
-    backupInput.addEventListener("change", async () => {
-      const file = backupInput.files[0];
-      if (!file) return;
+function currentItems(){
+  return db.items.filter(x => !x.deleted);
+}
 
-      try {
-        const data = JSON.parse(await file.text());
-        if (!Array.isArray(data)) throw new Error("Formato inválido");
+function filteredItems(){
+  const q = el("searchInput").value.trim().toLowerCase();
+  const tag = el("tagFilter").value;
+  const conv = el("conversationFilter").value;
 
-        const byUrl = new Map(links.map(item => [item.url, item]));
+  let items = currentItems();
 
-        for (const item of data) {
-          const url = typeof item.url === "string" ? normalizeUrl(item.url) : null;
-          if (!url) continue;
+  if(currentFilter === "favorites") items = items.filter(x => x.favorite);
+  if(currentFilter === "unvisited") items = items.filter(x => !x.visited);
+  if(currentFilter === "repeated") items = items.filter(x => (x.repeatCount || 1) > 1);
 
-          if (byUrl.has(url)) {
-            const current = byUrl.get(url);
-            current.count = Math.max(Number(current.count) || 1, Number(item.count) || 1);
-            current.favorite = Boolean(current.favorite || item.favorite);
-            current.visited = Boolean(current.visited || item.visited);
-            current.conversations = [...new Set([
-              ...(current.conversations || []),
-              ...(Array.isArray(item.conversations) ? item.conversations : [])
-            ])];
-          } else {
-            byUrl.set(url, {
-              id: item.id || String(Date.now()) + Math.random(),
-              url,
-              count: Number(item.count) || 1,
-              conversations: Array.isArray(item.conversations) ? item.conversations : [],
-              importedAt: item.importedAt || new Date().toISOString(),
-              favorite: Boolean(item.favorite),
-              visited: Boolean(item.visited)
-            });
-          }
-        }
+  if(q){
+    items = items.filter(x => [
+      x.url, x.title, x.description,
+      ...(x.tags || []),
+      ...(x.conversations || [])
+    ].join(" ").toLowerCase().includes(q));
+  }
+  if(tag) items = items.filter(x => (x.tags || []).includes(tag));
+  if(conv) items = items.filter(x => (x.conversations || []).includes(conv));
 
-        links = [...byUrl.values()];
-        saveLinks();
-        render();
-        alert("Backup importado.");
-      } catch {
-        alert("Não foi possível importar esse arquivo. Selecione um backup JSON válido.");
-      }
+  const sort = el("sortSelect").value;
+  items.sort((a,b) => {
+    if(sort === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
+    if(sort === "title") return (a.title || a.url).localeCompare(b.title || b.url);
+    if(sort === "conversation") return ((a.conversations||[])[0]||"").localeCompare((b.conversations||[])[0]||"");
+    if(sort === "visited") return Number(a.visited) - Number(b.visited);
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+  return items;
+}
 
-      backupInput.value = "";
-    });
+function updateCounts(){
+  const active = currentItems();
+  el("countTotal").textContent = active.length;
+  el("countFav").textContent = active.filter(x => x.favorite).length;
+  el("countUnvisited").textContent = active.filter(x => !x.visited).length;
+  el("countRepeated").textContent = active.filter(x => (x.repeatCount || 1) > 1).length;
+  el("visibleCount").textContent = `${filteredItems().length} visíveis`;
+}
 
-    document.querySelector("#clearButton").addEventListener("click", () => {
-      if (!links.length) return;
-      if (!confirm("Apagar todos os links salvos neste navegador?")) return;
-      links = [];
-      saveLinks();
-      render();
-    });
+function updateFilterOptions(){
+  const tags = [...new Set(currentItems().flatMap(x => x.tags || []))].sort((a,b)=>a.localeCompare(b));
+  const convs = [...new Set(currentItems().flatMap(x => x.conversations || []))].sort((a,b)=>a.localeCompare(b));
 
-    function removeLink(id) {
-      const index = links.findIndex(item => item.id === id);
-      if (index === -1) return;
+  const tagSel = el("tagFilter");
+  const convSel = el("conversationFilter");
+  const currentTag = tagSel.value;
+  const currentConv = convSel.value;
 
-      recentlyDeleted = { item: links[index], index };
-      links.splice(index, 1);
-      saveLinks();
-      showUndo();
-      render();
-    }
+  tagSel.innerHTML = `<option value="">Todas as tags</option>` + tags.map(t => `<option ${t===currentTag?"selected":""} value="${escapeAttr(t)}">${escapeHtml(t)}</option>`).join("");
+  convSel.innerHTML = `<option value="">Todas as conversas</option>` + convs.map(c => `<option ${c===currentConv?"selected":""} value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
+}
 
-    function showUndo() {
-      clearTimeout(undoTimer);
-      undoArea.replaceChildren();
+function updatePreviewState(){
+  const ok = PREVIEW_WORKER_URL && !PREVIEW_WORKER_URL.includes("SEU-WORKER");
+  el("previewState").textContent = ok ? "Worker: configurado" : "Worker: não configurado";
+}
 
-      const message = document.createElement("span");
-      message.textContent = "Link removido.";
+function render(){
+  updateCounts();
+  updateFilterOptions();
+  updatePreviewState();
 
-      const button = document.createElement("button");
-      button.id = "undoButton";
-      button.className = "secondary small";
-      button.textContent = "Desfazer";
-      button.addEventListener("click", () => {
-        if (!recentlyDeleted) return;
-        links.splice(recentlyDeleted.index, 0, recentlyDeleted.item);
-        recentlyDeleted = null;
-        clearTimeout(undoTimer);
-        undoArea.replaceChildren();
-        saveLinks();
-        render();
-      });
+  const items = filteredItems();
+  const wrap = el("links");
+  wrap.innerHTML = "";
 
-      undoArea.append(message, button);
-      undoTimer = setTimeout(() => {
-        recentlyDeleted = null;
-        undoArea.replaceChildren();
-      }, 8000);
-    }
+  if(!items.length){
+    wrap.innerHTML = `<div class="empty">Nenhum link encontrado.</div>`;
+    return;
+  }
 
-    function render() {
-      const query = searchInput.value.trim().toLowerCase();
-      let shown = links.filter(item => {
-        const conversationText = (item.conversations || []).join(" ").toLowerCase();
-        const matchesSearch = item.url.toLowerCase().includes(query) ||
-          conversationText.includes(query);
+  items.forEach(item => {
+    const repeated = (item.repeatCount || 1) > 1;
+    const convs = item.conversations || [];
+    const tags = item.tags || [];
+    const hasPreview = !!(item.title || item.description || item.image);
 
-        if (!matchesSearch) return false;
-        if (filterInput.value === "favorites" && !item.favorite) return false;
-        if (filterInput.value === "unvisited" && item.visited) return false;
-        if (filterInput.value === "repeated" && (Number(item.count) || 1) < 2) return false;
-        return true;
-      });
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <div class="card-head">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+            ${item.favorite ? `<span class="badge fav">Favorito</span>` : ""}
+            ${item.visited ? `<span class="badge">Visitado</span>` : `<span class="badge unvisited">Não visitado</span>`}
+            ${repeated ? `<span class="badge repeat">Repetido ×${item.repeatCount}</span>` : ""}
+          </div>
+          <a class="url" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title || item.url)}</a>
+          <div class="meta">${escapeHtml(item.url)}</div>
+        </div>
+      </div>
 
-      if (sortInput.value === "recent") {
-        shown.sort((a, b) => new Date(b.importedAt) - new Date(a.importedAt));
-      } else if (sortInput.value === "oldest") {
-        shown.sort((a, b) => new Date(a.importedAt) - new Date(b.importedAt));
-      } else if (sortInput.value === "name") {
-        shown.sort((a, b) => a.url.localeCompare(b.url));
-      } else if (sortInput.value === "count") {
-        shown.sort((a, b) => (Number(b.count) || 1) - (Number(a.count) || 1));
-      }
+      <div class="meta">${escapeHtml(item.description || "Sem descrição")}</div>
 
-      const totalOccurrences = links.reduce((sum, item) => sum + (Number(item.count) || 1), 0);
-      summaryElement.textContent =
-        `${links.length} link${links.length === 1 ? "" : "s"} único${links.length === 1 ? "" : "s"} · ${totalOccurrences} ocorrência${totalOccurrences === 1 ? "" : "s"} · ${shown.length} exibido${shown.length === 1 ? "" : "s"}`;
+      <div class="tags">
+        ${convs.map(c => `<span class="tag" data-tag="${escapeAttr(c)}">${escapeHtml(c)}</span>`).join("")}
+        ${tags.map(t => `<span class="tag" data-tag="${escapeAttr(t)}">#${escapeHtml(t)}</span>`).join("")}
+      </div>
 
-      listElement.replaceChildren();
+      <div class="preview" ${hasPreview ? "" : 'style="display:none"'} >
+        ${item.image ? `<img src="${escapeAttr(item.image)}" alt="">` : `<img src="" alt="" style="display:none">`}
+        <div class="pbody">
+          <h3>${escapeHtml(item.title || "Sem título")}</h3>
+          <p>${escapeHtml(item.description || "")}</p>
+        </div>
+      </div>
 
-      if (!shown.length) {
-        const empty = document.createElement("p");
-        empty.className = "empty";
-        empty.textContent = links.length ? "Nenhum link corresponde aos filtros." : "Importe uma conversa para começar.";
-        listElement.append(empty);
-        return;
-      }
+      <div class="inline-actions">
+        <button class="small btn" data-act="favorite">${item.favorite ? "Desfavoritar" : "Favoritar"}</button>
+        <button class="small btn" data-act="visited">${item.visited ? "Não visitado" : "Visitado"}</button>
+        <button class="small btn" data-act="preview">Buscar preview</button>
+        <button class="small btn" data-act="tag">Adicionar tag</button>
+        <button class="small btn" data-act="conversation">Editar conversa</button>
+        <button class="small btn-danger" data-act="delete">Remover</button>
+      </div>
+    `;
 
-      for (const item of shown) {
-        const card = document.createElement("article");
-        card.className = "card";
-
-        const title = document.createElement("div");
-        title.className = "link-title";
-
-        const anchor = document.createElement("a");
-        anchor.href = item.url;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        anchor.textContent = item.url;
-        anchor.addEventListener("click", () => {
-          item.visited = true;
-          saveLinks();
-          setTimeout(render, 0);
-        });
-        title.append(anchor);
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = `Apareceu ${item.count || 1} vez(es)`;
-
-        for (const conversation of item.conversations || []) {
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          badge.textContent = conversation;
-          meta.append(" ", badge);
-        }
-
-        const status = document.createElement("span");
-        status.className = "badge";
-        status.textContent = item.visited ? "Visitado" : "Não visitado";
-        meta.append(" ", status);
-
-        const actions = document.createElement("div");
-        actions.className = "card-actions";
-
-        const favoriteButton = document.createElement("button");
-        favoriteButton.className = "secondary small";
-        favoriteButton.textContent = item.favorite ? "★ Favorito" : "☆ Favoritar";
-        favoriteButton.addEventListener("click", () => {
+    div.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const act = btn.dataset.act;
+        if(act === "favorite"){
           item.favorite = !item.favorite;
-          saveLinks();
-          render();
-        });
-
-        const visitedButton = document.createElement("button");
-        visitedButton.className = "secondary small";
-        visitedButton.textContent = item.visited ? "Marcar não visitado" : "Marcar visitado";
-        visitedButton.addEventListener("click", () => {
+          item.updatedAt = now();
+          saveDB(true);
+        }else if(act === "visited"){
           item.visited = !item.visited;
-          saveLinks();
-          render();
-        });
-
-        const copyButton = document.createElement("button");
-        copyButton.className = "secondary small";
-        copyButton.textContent = "Copiar link";
-        copyButton.addEventListener("click", async () => {
-          try {
-            await navigator.clipboard.writeText(item.url);
-            copyButton.textContent = "Copiado!";
-            setTimeout(() => copyButton.textContent = "Copiar link", 1500);
-          } catch {
-            alert("Não foi possível copiar automaticamente. Selecione e copie o endereço.");
+          item.updatedAt = now();
+          saveDB(true);
+        }else if(act === "preview"){
+          await fetchPreview(item);
+        }else if(act === "tag"){
+          const tag = prompt("Nova tag:");
+          if(tag && tag.trim()){
+            item.tags = mergeTags(item.tags || [], [tag.trim()]);
+            item.updatedAt = now();
+            saveDB(true);
           }
-        });
+        }else if(act === "conversation"){
+          const value = prompt("Nome da conversa:", (item.conversations || [])[0] || "");
+          if(value && value.trim()){
+            item.conversations = mergeTags(item.conversations || [], [value.trim()]);
+            item.updatedAt = now();
+            saveDB(true);
+          }
+        }else if(act === "delete"){
+          if(confirm("Remover este link? Você poderá desfazer.")){
+            item.deleted = true;
+            item.updatedAt = now();
+            undoItem = structuredClone(item);
+            saveDB(true);
+            showUndo();
+          }
+        }
+      });
+    });
 
-        const deleteButton = document.createElement("button");
-        deleteButton.className = "danger small";
-        deleteButton.textContent = "Remover";
-        deleteButton.addEventListener("click", () => removeLink(item.id));
+    div.querySelectorAll(".tag").forEach(tagEl => {
+      tagEl.addEventListener("click", () => {
+        const value = tagEl.dataset.tag;
+        el("searchInput").value = value;
+        render();
+      });
+    });
 
-        actions.append(favoriteButton, visitedButton, copyButton, deleteButton);
-        card.append(title, meta, actions);
-        listElement.append(card);
-      }
-    }
+    wrap.appendChild(div);
+  });
+}
 
-    searchInput.addEventListener("input", render);
-    filterInput.addEventListener("change", render);
-    sortInput.addEventListener("change", render);
+let undoTimer = null;
+function showUndo(){
+  const bar = el("undoBar");
+  const txt = el("undoText");
+  txt.textContent = "Item removido";
+  bar.style.display = "inline-flex";
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    bar.style.display = "none";
+    undoItem = null;
+  }, 7000);
+}
 
-    render();
-  </script>
+function hideUndo(){
+  el("undoBar").style.display = "none";
+  clearTimeout(undoTimer);
+  undoItem = null;
+}
+
+el("undoBtn").addEventListener("click", () => {
+  if(!undoItem) return;
+  const idx = db.items.findIndex(x => x.id === undoItem.id);
+  if(idx >= 0){
+    db.items[idx].deleted = false;
+    db.items[idx].updatedAt = now();
+    saveDB(true);
+    toast("Remoção desfeita.");
+  }
+  hideUndo();
+});
+
+el("dismissUndoBtn").addEventListener("click", hideUndo);
+
+async function fetchPreview(item){
+  if(!PREVIEW_WORKER_URL || PREVIEW_WORKER_URL.includes("SEU-WORKER")){
+    toast("Configure a URL do Worker primeiro.");
+    return;
+  }
+  try{
+    el("refreshPreviewsBtn").disabled = true;
+    toast("Buscando preview...");
+    const res = await fetch(`${PREVIEW_WORKER_URL}?url=${encodeURIComponent(item.url)}`);
+    if(!res.ok) throw new Error("Worker indisponível");
+    const data = await res.json();
+    item.title = data.title || item.title || "";
+    item.description = data.description || item.description || "";
+    item.image = data.image || item.image || "";
+    item.updatedAt = now();
+    saveDB(true);
+    toast("Preview atualizado.");
+  }catch(e){
+    toast("Falha ao buscar preview.");
+  }finally{
+    el("refreshPreviewsBtn").disabled = false;
+  }
+}
+
+async function runPreviewQueue(){
+  if(previewRunning) return;
+  previewRunning = true;
+  const items = filteredItems().filter(x => !x.title || !x.description || !x.image).slice(0, MAX_AUTOPREVIEW);
+  previewQueue = items;
+  while(previewQueue.length){
+    const item = previewQueue.shift();
+    await fetchPreview(item);
+    await sleep(250);
+  }
+  previewRunning = false;
+}
+
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function escapeHtml(s=""){
+  return String(s).replace(/[&<>";'"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
+}
+function escapeAttr(s=""){ return escapeHtml(s); }
+
+el("importTxtBtn").addEventListener("click", async () => {
+  const file = el("txtFile").files[0];
+  if(!file){ toast("Selecione um arquivo .txt."); return; }
+  const conv = el("conversationName").value.trim();
+  await importTxtFromFile(file, conv);
+});
+
+el("exportBtn").addEventListener("click", () => {
+  const data = JSON.stringify(db, null, 2);
+  const blob = new Blob([data], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `whatsapp-links-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+el("downloadBackupBtn").addEventListener("click", () => el("exportBtn").click());
+
+function importBackupText(text){
+  const parsed = JSON.parse(text);
+  if(Array.isArray(parsed.items)){
+    db = { version: parsed.version || BACKUP_VERSION, items: parsed.items };
+    saveDB(true);
+    toast("Backup restaurado.");
+    return;
+  }
+  if(Array.isArray(parsed)){
+    db = { version: BACKUP_VERSION, items: parsed };
+    saveDB(true);
+    toast("Backup restaurado.");
+    return;
+  }
+  throw new Error("Formato inválido");
+}
+
+el("backupInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    importBackupText(await file.text());
+  }catch{
+    toast("Arquivo de backup inválido.");
+  }
+});
+
+el("importJsonInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    importBackupText(await file.text());
+  }catch{
+    toast("JSON inválido.");
+  }
+});
+
+el("clearAllBtn").addEventListener("click", () => {
+  if(confirm("Apagar todos os links salvos?")){
+    db = { version: BACKUP_VERSION, items: [] };
+    saveDB(true);
+    toast("Dados apagados.");
+  }
+});
+
+el("refreshPreviewsBtn").addEventListener("click", runPreviewQueue);
+el("searchInput").addEventListener("input", render);
+el("sortSelect").addEventListener("change", render);
+el("tagFilter").addEventListener("change", render);
+el("conversationFilter").addEventListener("change", render);
+
+document.getElementById("quickFilters").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+  chip.classList.add("active");
+  currentFilter = chip.dataset.filter;
+  render();
+});
+
+function updateUI(){
+  render();
+}
+updateUI();
+</script>
 </body>
 </html>
