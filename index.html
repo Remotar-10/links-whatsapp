@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Links do WhatsApp</title>
+
+<h1>Links da conversa</h1>
+<input id="arquivo" type="file" accept=".txt,text/plain">
+<p id="contagem">Nenhum arquivo selecionado.</p>
+<ul id="links"></ul>
+
+<script>
+const entrada = document.querySelector("#arquivo");
+const lista = document.querySelector("#links");
+const contagem = document.querySelector("#contagem");
+
+entrada.addEventListener("change", async () => {
+  lista.replaceChildren();
+
+  const arquivo = entrada.files[0];
+  if (!arquivo) {
+    contagem.textContent = "Nenhum arquivo selecionado.";
+    return;
+  }
+
+  const texto = await arquivo.text();
+  const urls = texto.match(/https?:\/\/[^\s<>"']+/gi) || [];
+  const unicos = [
+    ...new Set(urls.map(url => url.replace(/[),.;!?]+$/, "")))
+  ];
+
+  let adicionados = 0;
+
+  for (const url of unicos) {
+    try {
+      const endereco = new URL(url);
+      if (!["http:", "https:"].includes(endereco.protocol)) continue;
+
+      const item = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = endereco.href;
+      link.textContent = endereco.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      item.append(link);
+      lista.append(item);
+      adicionados++;
+    } catch {
+      // Ignora endereços inválidos.
+    }
+  }
+
+  contagem.textContent =
+    `${adicionados} link${adicionados === 1 ? "" : "s"} único${adicionados === 1 ? "" : "s"} encontrado${adicionados === 1 ? "" : "s"}.`;
+});
+</script>
+</html>
