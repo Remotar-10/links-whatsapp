@@ -87,10 +87,7 @@
       outline-offset: 1px;
     }
 
-    button, .file-button {
-      cursor: pointer;
-    }
-
+    button, .file-button { cursor: pointer; }
     button:hover, .file-button:hover { background: #f7f8f8; }
 
     button.primary {
@@ -107,13 +104,9 @@
     }
 
     .file-button input { display: none; }
-
     #search { flex: 1 1 220px; }
-
     #list { display: grid; gap: 10px; }
-
     .link-card { padding: 14px; }
-
     .card-top { justify-content: space-between; }
 
     .conversation {
@@ -191,8 +184,8 @@
     @media (max-width: 560px) {
       header { padding: 16px 12px; }
       main { padding: 16px 12px 80px; }
-      .top { align-items: flex-start; }
-      .top .actions { justify-content: flex-end; }
+      .top { align-items: flex-start; flex-direction: column; }
+      .top .actions { justify-content: flex-start; }
       .panel { padding: 12px; }
       .filters > * { flex: 1 1 130px; }
     }
@@ -232,9 +225,9 @@
           <option value="conversation">Conversa (A–Z)</option>
           <option value="url">Link (A–Z)</option>
         </select>
-        <span id="status" role="status"></span>
+        <span id="status" role="status" aria-live="polite"></span>
       </div>
-      <p class="hint">Os dados ficam salvos neste navegador. Use o backup JSON para transferi-los entre dispositivos.</p>
+      <p class="hint">Os dados ficam salvos neste navegador. Exporte um JSON para criar um backup ou transferir os dados.</p>
     </section>
 
     <p id="count"></p>
@@ -252,8 +245,9 @@
       "use strict";
 
       const STORAGE_KEY = "whatsapp-links-v1";
-      const $ = (selector) => document.querySelector(selector);
+      const $ = selector => document.querySelector(selector);
       const listEl = $("#list");
+
       let links = loadLinks();
       let undoItem = null;
       let undoTimer = null;
@@ -261,18 +255,59 @@
       function loadLinks() {
         try {
           const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-          return Array.isArray(saved) ? saved.filter(isValidLink) : [];
+          return Array.isArray(saved) ? saved.filter(isValidLink).map(normalizeItem) : [];
         } catch {
+          showStatus("Não foi possível ler os dados salvos. Importe seu backup JSON, se tiver um.");
           return [];
         }
       }
 
       function isValidLink(item) {
-        return item && typeof item.url === "string" && /^https?:\/\//i.test(item.url);
+        if (!item || typeof item.url !== "string") return false;
+
+        try {
+          const url = new URL(item.url);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      }
+
+      function normalizeItem(item) {
+        return {
+          id: typeof item.id === "string" ? item.id : makeId(),
+          url: item.url,
+          conversation: typeof item.conversation === "string" && item.conversation.trim()
+            ? item.conversation.trim()
+            : "Conversa sem nome",
+          favorite: Boolean(item.favorite),
+          visited: Boolean(item.visited),
+          createdAt: Number.isFinite(Number(item.createdAt)) ? Number(item.createdAt) : Date.now()
+        };
       }
 
       function save() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+          return true;
+        } catch (error) {
+          console.error("Falha ao salvar links:", error);
+          showStatus("Não foi possível salvar. Exporte um backup e libere espaço no navegador.");
+          return false;
+        }
+      }
+
+      function makeId() {
+        return globalThis.crypto?.randomUUID?.() ||
+          `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function showStatus(message) {
+        const status = $("#status");
+        status.textContent = message;
+        window.setTimeout(() => {
+          if (status.textContent === message) status.textContent = "";
+        }, 7000);
       }
 
       function cleanUrl(raw) {
@@ -281,37 +316,77 @@
 
       function extractUrls(text) {
         const found = text.match(/https?:\/\/[^\s<>"']+/gi) || [];
-        return [...new Set(found.map(cleanUrl).filter(url => /^https?:\/\//i.test(url)))];
+        return [...new Set(found.map(cleanUrl).filter(isValidUrl))];
       }
 
-      function getConversation(line) {
-        // Formato comum do WhatsApp: 12/03/2025, 14:30 - Nome: mensagem
-        const match = line.match(/^\[?\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4},?\s+\d{1,2}:\d{2}(?:\s?[AP]M)?\]?\s+-\s+([^:]+):/i);
-        return match ? match[1].trim() : "Conversa sem nome";
+      function isValidUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      }
+
+      function normalizeUrl(value) {
+        try {
+          const url = new URL(value);
+          url.hash = "";
+          return url.href.replace(/\/$/, "").toLowerCase();
+        } catch {
+          return value.trim().toLowerCase();
+        }
+      }
+
+      function getConversationFromLine(line) {
+        // Formato: [12/03/2025, 14:30] Nome: mensagem
+        // Formato: 12/03/2025, 14:30 - Nome: mensagem
+        const patterns = [
+          /^\[(?:\d{1,4}[\/.-]){2}\d{1,4},?\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?\]\s*([^:]+):/i,
+          /^(?:\d{1,4}[\/.-]){2}\d{1,4},?\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s?[AP]M)?\s+-\s+([^:]+):/i
+        ];
+
+        for (const pattern of patterns) {
+          const match = line.match(pattern);
+          if (match?.[1]) return match[1].trim();
+        }
+        return null;
+      }
+
+      function getFallbackConversation(filename) {
+        const name = filename.replace(/\.txt$/i, "").trim();
+        return name || "Conversa sem nome";
       }
 
       async function importTxt(files) {
         let added = 0;
         let skipped = 0;
+        let withoutConversationFormat = 0;
 
         for (const file of files) {
           const text = await file.text();
-          const lines = text.split(/\r?\n/);
+          const fallbackConversation = getFallbackConversation(file.name);
 
-          for (const line of lines) {
-            const conversation = getConversation(line);
+          for (const line of text.split(/\r?\n/)) {
+            const detectedConversation = getConversationFromLine(line);
+            const conversation = detectedConversation || fallbackConversation;
+
+            if (!detectedConversation && extractUrls(line).length) {
+              withoutConversationFormat++;
+            }
+
             for (const url of extractUrls(line)) {
               const key = normalizeUrl(url);
+
               if (links.some(item => normalizeUrl(item.url) === key)) {
                 skipped++;
                 continue;
               }
+
               links.push({
                 id: makeId(),
                 url,
-                conversation: file.name.replace(/\.txt$/i, "") === file.name
-                  ? conversation
-                  : conversation,
+                conversation,
                 favorite: false,
                 visited: false,
                 createdAt: Date.now()
@@ -321,61 +396,43 @@
           }
         }
 
-        save();
-        render();
-        setStatus(`${added} link(s) importado(s); ${skipped} duplicado(s) ignorado(s).`);
-      }
-
-      function normalizeUrl(url) {
-        try {
-          const parsed = new URL(url);
-          parsed.hash = "";
-          return parsed.href.replace(/\/$/, "").toLowerCase();
-        } catch {
-          return url.toLowerCase();
+        if (save()) {
+          render();
+          let message = `${added} link(s) importado(s); ${skipped} duplicado(s) ignorado(s).`;
+          if (withoutConversationFormat) {
+            message += ` ${withoutConversationFormat} link(s) usaram o nome do arquivo como conversa.`;
+          }
+          showStatus(message);
         }
-      }
-
-      function makeId() {
-        return globalThis.crypto?.randomUUID?.() ||
-          `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      }
-
-      function setStatus(message) {
-        $("#status").textContent = message;
-        window.setTimeout(() => {
-          if ($("#status").textContent === message) $("#status").textContent = "";
-        }, 5000);
       }
 
       function render() {
         const query = $("#search").value.trim().toLowerCase();
         const filter = $("#filter").value;
         const sort = $("#sort").value;
-        const repeated = new Set();
-
         const counts = new Map();
+
         for (const item of links) {
           const key = normalizeUrl(item.url);
           counts.set(key, (counts.get(key) || 0) + 1);
         }
-        for (const [key, count] of counts) if (count > 1) repeated.add(key);
 
         let shown = links.filter(item => {
-          const matchesQuery = !query ||
+          const matchesQuery =
+            !query ||
             item.url.toLowerCase().includes(query) ||
-            (item.conversation || "").toLowerCase().includes(query);
+            item.conversation.toLowerCase().includes(query);
 
           if (!matchesQuery) return false;
           if (filter === "favorites" && !item.favorite) return false;
           if (filter === "unvisited" && item.visited) return false;
-          if (filter === "repeated" && !repeated.has(normalizeUrl(item.url))) return false;
+          if (filter === "repeated" && (counts.get(normalizeUrl(item.url)) || 0) < 2) return false;
           return true;
         });
 
         shown.sort((a, b) => {
           if (sort === "oldest") return a.createdAt - b.createdAt;
-          if (sort === "conversation") return (a.conversation || "").localeCompare(b.conversation || "");
+          if (sort === "conversation") return a.conversation.localeCompare(b.conversation);
           if (sort === "url") return a.url.localeCompare(b.url);
           return b.createdAt - a.createdAt;
         });
@@ -392,17 +449,16 @@
 
           const conversation = document.createElement("span");
           conversation.className = "conversation";
-          conversation.textContent = item.conversation || "Conversa sem nome";
+          conversation.textContent = item.conversation;
 
-          const repeatLabel = repeated.has(normalizeUrl(item.url))
-            ? document.createElement("span")
-            : null;
-          if (repeatLabel) {
-            repeatLabel.className = "conversation";
-            repeatLabel.textContent = "Repetido";
-          }
           top.append(conversation);
-          if (repeatLabel) top.append(repeatLabel);
+
+          if ((counts.get(normalizeUrl(item.url)) || 0) > 1) {
+            const repeated = document.createElement("span");
+            repeated.className = "conversation";
+            repeated.textContent = "Repetido";
+            top.append(repeated);
+          }
 
           const anchor = document.createElement("a");
           anchor.className = "link";
@@ -410,6 +466,7 @@
           anchor.target = "_blank";
           anchor.rel = "noopener noreferrer";
           anchor.textContent = item.url;
+
           anchor.addEventListener("click", () => {
             item.visited = true;
             save();
@@ -429,11 +486,10 @@
           favorite.type = "button";
           favorite.className = item.favorite ? "favorite" : "";
           favorite.textContent = item.favorite ? "★ Favorito" : "☆ Favorito";
-          favorite.setAttribute("aria-pressed", String(Boolean(item.favorite)));
+          favorite.setAttribute("aria-pressed", String(item.favorite));
           favorite.addEventListener("click", () => {
             item.favorite = !item.favorite;
-            save();
-            render();
+            if (save()) render();
           });
 
           const visited = document.createElement("button");
@@ -441,8 +497,7 @@
           visited.textContent = item.visited ? "Marcar não visitado" : "Marcar visitado";
           visited.addEventListener("click", () => {
             item.visited = !item.visited;
-            save();
-            render();
+            if (save()) render();
           });
 
           const remove = document.createElement("button");
@@ -462,84 +517,172 @@
       function removeLink(id) {
         const index = links.findIndex(item => item.id === id);
         if (index < 0) return;
+
         undoItem = { item: links[index], index };
         links.splice(index, 1);
-        save();
-        render();
 
-        const bar = $("#undoBar");
-        bar.style.display = "flex";
+        if (!save()) {
+          links.splice(index, 0, undoItem.item);
+          undoItem = null;
+          return;
+        }
+
+        render();
+        $("#undoBar").style.display = "flex";
+
         clearTimeout(undoTimer);
         undoTimer = window.setTimeout(() => {
-          bar.style.display = "none";
+          $("#undoBar").style.display = "none";
           undoItem = null;
         }, 6000);
       }
 
       $("#undoButton").addEventListener("click", () => {
         if (!undoItem) return;
+
         links.splice(Math.min(undoItem.index, links.length), 0, undoItem.item);
-        undoItem = null;
-        clearTimeout(undoTimer);
-        $("#undoBar").style.display = "none";
-        save();
-        render();
+        if (save()) {
+          undoItem = null;
+          clearTimeout(undoTimer);
+          $("#undoBar").style.display = "none";
+          render();
+        }
       });
 
       $("#txtInput").addEventListener("change", async event => {
         const files = [...event.target.files];
         if (!files.length) return;
+
         try {
           await importTxt(files);
-        } catch {
-          setStatus("Não foi possível ler um dos arquivos.");
+        } catch (error) {
+          console.error("Falha ao importar TXT:", error);
+          showStatus("Não foi possível ler um dos arquivos TXT.");
         }
+
         event.target.value = "";
       });
 
       $("#exportButton").addEventListener("click", () => {
-        const blob = new Blob([JSON.stringify(links, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = "backup-links-whatsapp.json";
-        anchor.click();
-        URL.revokeObjectURL(url);
+        try {
+          const blob = new Blob([JSON.stringify(links, null, 2)], {
+            type: "application/json"
+          });
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = "backup-links-whatsapp.json";
+          anchor.click();
+          URL.revokeObjectURL(url);
+          showStatus("Backup JSON exportado.");
+        } catch (error) {
+          console.error("Falha ao exportar JSON:", error);
+          showStatus("Não foi possível exportar o backup.");
+        }
       });
+
+      function prepareImportedLinks(data) {
+        if (!Array.isArray(data)) {
+          throw new Error("O arquivo JSON precisa conter uma lista de links.");
+        }
+
+        const unique = new Map();
+
+        for (const rawItem of data) {
+          if (!isValidLink(rawItem)) continue;
+
+          const item = normalizeItem(rawItem);
+          const key = normalizeUrl(item.url);
+
+          // Elimina duplicatas dentro do próprio arquivo JSON.
+          if (!unique.has(key)) unique.set(key, item);
+        }
+
+        return [...unique.values()];
+      }
+
+      function importJson(items, mode) {
+        if (mode === "replace") {
+          const previous = links;
+          links = items.map(item => ({ ...item, id: makeId() }));
+
+          if (!save()) {
+            links = previous;
+            return;
+          }
+
+          render();
+          showStatus(`${items.length} link(s) importado(s). A lista anterior foi substituída.`);
+          return;
+        }
+
+        const merged = [...links];
+        const seen = new Set(merged.map(item => normalizeUrl(item.url)));
+        let added = 0;
+        let skipped = 0;
+
+        for (const item of items) {
+          const key = normalizeUrl(item.url);
+
+          if (seen.has(key)) {
+            skipped++;
+            continue;
+          }
+
+          merged.push({ ...item, id: makeId() });
+          seen.add(key);
+          added++;
+        }
+
+        const previous = links;
+        links = merged;
+
+        if (!save()) {
+          links = previous;
+          return;
+        }
+
+        render();
+        showStatus(`${added} link(s) adicionado(s); ${skipped} duplicado(s) ignorado(s).`);
+      }
 
       $("#jsonInput").addEventListener("change", async event => {
         const file = event.target.files[0];
         if (!file) return;
 
         try {
-          const imported = JSON.parse(await file.text());
-          if (!Array.isArray(imported) || !imported.every(isValidLink)) {
-            throw new Error("Formato inválido");
+          const parsed = JSON.parse(await file.text());
+          const imported = prepareImportedLinks(parsed);
+
+          if (!imported.length) {
+            showStatus("O JSON não contém links válidos. A lista atual não foi alterada.");
+            return;
           }
 
-          const existing = new Set(links.map(item => normalizeUrl(item.url)));
-          let added = 0;
+          const mode = window.prompt(
+            `Foram encontrados ${imported.length} link(s) válidos.\n\n` +
+            "Digite M para mesclar com os links atuais.\n" +
+            "Digite S para substituir todos os links atuais.\n" +
+            "Cancele para não importar."
+          );
 
-          for (const item of imported) {
-            const key = normalizeUrl(item.url);
-            if (existing.has(key)) continue;
-            links.push({
-              id: makeId(),
-              url: item.url,
-              conversation: typeof item.conversation === "string" ? item.conversation : "Conversa sem nome",
-              favorite: Boolean(item.favorite),
-              visited: Boolean(item.visited),
-              createdAt: Number(item.createdAt) || Date.now()
-            });
-            existing.add(key);
-            added++;
+          if (mode === null) return;
+
+          const choice = mode.trim().toLowerCase();
+
+          if (choice === "m") {
+            importJson(imported, "merge");
+          } else if (choice === "s") {
+            const confirmed = window.confirm(
+              "Isso substituirá a lista atual. Faça um backup antes, se necessário. Continuar?"
+            );
+            if (confirmed) importJson(imported, "replace");
+          } else {
+            showStatus("Importação cancelada: escolha M para mesclar ou S para substituir.");
           }
-
-          save();
-          render();
-          setStatus(`${added} link(s) importado(s) do backup.`);
-        } catch {
-          setStatus("Arquivo JSON inválido ou incompatível.");
+        } catch (error) {
+          console.error("Falha ao importar JSON:", error);
+          showStatus("Arquivo JSON inválido ou impossível de ler. A lista atual não foi alterada.");
         }
 
         event.target.value = "";
