@@ -1,460 +1,941 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Link Extractor</title>
+    <title>Links do WhatsApp</title>
+
     <style>
         :root {
-            --primary: #25D366;
-            --primary-dark: #128C7E;
-            --bg: #f0f2f5;
-            --text: #333;
-            --card-bg: #ffffff;
-            --border: #ddd;
+            --primary: #128C7E;
+            --primary-light: #25D366;
+            --background: #f0f2f5;
+            --surface: #fff;
+            --text: #263238;
+            --muted: #687780;
+            --border: #e0e0e0;
+            --danger: #c62828;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            padding: 24px 16px;
+            background: var(--background);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         }
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 960px;
+            margin: 0 auto;
         }
 
-        h1 { text-align: center; color: var(--primary-dark); }
+        h1 {
+            margin: 0 0 20px;
+            color: var(--primary);
+            text-align: center;
+        }
 
         .panel {
-            background: var(--card-bg);
-            padding: 20px;
+            margin-bottom: 18px;
+            padding: 18px;
+            background: var(--surface);
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgb(0 0 0 / 7%);
         }
 
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
         }
 
-        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
-
-        button, label.file-label {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
+        button,
+        .file-label {
+            min-height: 40px;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 7px;
+            background: var(--primary);
+            color: #fff;
             cursor: pointer;
+            font: inherit;
             font-weight: 600;
-            transition: opacity 0.2s;
-            background: var(--primary-dark);
-            color: white;
-            display: inline-block;
+            text-align: center;
         }
 
-        button.secondary { background: #6c757d; }
-        button.danger { background: #dc3545; }
-        button:hover { opacity: 0.9; }
+        button:hover,
+        .file-label:hover {
+            opacity: .88;
+        }
 
-        input[type="file"] { display: none; }
+        button.secondary,
+        .file-label.secondary {
+            background: #607d8b;
+        }
 
-        .search-box {
+        button.danger {
+            background: var(--danger);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .search {
             width: 100%;
-            padding: 12px;
+            min-height: 44px;
+            margin-bottom: 14px;
+            padding: 10px 12px;
             border: 1px solid var(--border);
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 16px;
-            margin-bottom: 15px;
+            border-radius: 7px;
+            font: inherit;
         }
 
         .filters {
             display: flex;
-            gap: 10px;
             flex-wrap: wrap;
-            margin-bottom: 15px;
+            gap: 8px;
         }
 
         .filter-chip {
-            padding: 5px 12px;
+            min-height: auto;
+            padding: 7px 12px;
             border: 1px solid var(--primary);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
             background: transparent;
-            color: var(--primary-dark);
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 14px;
         }
 
         .filter-chip.active {
             background: var(--primary);
-            color: white;
+            color: #fff;
         }
 
-        .link-list {
-            list-style: none;
+        .sort-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .sort-row select {
+            padding: 7px 9px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            color: var(--text);
+            font: inherit;
+        }
+
+        #linkContainer {
             padding: 0;
-            margin: 0;
+            overflow: hidden;
         }
 
         .link-item {
-            background: var(--card-bg);
-            border-bottom: 1px solid var(--border);
-            padding: 12px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            transition: background 0.2s;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .link-item:last-child { border-bottom: none; }
-        .link-item:hover { background: #f9f9f9; }
+        .link-item:last-child {
+            border-bottom: 0;
+        }
 
         .link-content {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            margin-right: 10px;
+            min-width: 0;
+            flex: 1;
         }
 
         .link-url {
-            color: #0066cc;
-            text-decoration: none;
-            white-space: nowrap;
+            display: block;
             overflow: hidden;
-            text-overflow: ellipsis;
+            color: #075eaa;
             font-size: 15px;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .link-url:hover {
+            text-decoration: underline;
         }
 
         .link-meta {
-            font-size: 12px;
-            color: #777;
-            margin-top: 4px;
             display: flex;
-            gap: 10px;
             flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 7px;
         }
 
         .meta-tag {
-            background: #eee;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
+            max-width: 100%;
+            padding: 3px 7px;
+            overflow: hidden;
+            border-radius: 5px;
+            background: #eef2f3;
+            color: var(--muted);
+            font-size: 12px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .link-actions { display: flex; gap: 8px; }
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 5px;
-            color: #888;
+        .link-actions {
+            display: flex;
+            flex-shrink: 0;
+            gap: 5px;
         }
-        .action-btn:hover { color: var(--text); }
-        .action-btn.fav.active { color: #ffcc00; }
+
+        .action-btn {
+            min-height: 36px;
+            padding: 5px 8px;
+            background: transparent;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .action-btn.favorite.active {
+            color: #e3a500;
+        }
+
+        .empty-state {
+            padding: 24px;
+            color: var(--muted);
+            text-align: center;
+        }
 
         .toast {
             position: fixed;
+            z-index: 10;
             bottom: 20px;
             left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
             display: none;
-            z-index: 1000;
+            max-width: calc(100% - 32px);
+            padding: 12px 16px;
+            transform: translateX(-50%);
+            border-radius: 7px;
+            background: #263238;
+            color: white;
+            box-shadow: 0 3px 12px rgb(0 0 0 / 20%);
+        }
+
+        .toast button {
+            min-height: auto;
+            margin-left: 8px;
+            padding: 0;
+            background: none;
+            color: #9ee7c1;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 560px) {
+            body {
+                padding: 16px 10px;
+            }
+
+            .panel {
+                padding: 14px;
+            }
+
+            .link-item {
+                padding: 12px 10px;
+            }
+
+            .toolbar > * {
+                flex: 1 1 140px;
+            }
         }
     </style>
 </head>
+
 <body>
+    <main class="container">
+        <h1>Links do WhatsApp</h1>
 
-<div class="container">
-    <h1>WhatsApp Link Extractor</h1>
-
-    <div class="panel">
-        <div class="controls">
-            <div class="btn-group">
+        <section class="panel" aria-label="Importação, busca e filtros">
+            <div class="toolbar">
                 <label class="file-label">
-                    Import .txt Export <input type="file" id="txtInput" accept=".txt">
+                    Importar conversa .txt
+                    <input id="txtInput" type="file" accept=".txt,text/plain">
                 </label>
+
                 <label class="file-label secondary">
-                    Import JSON <input type="file" id="jsonInput" accept=".json">
+                    Importar backup JSON
+                    <input id="jsonInput" type="file" accept=".json,application/json">
                 </label>
-                <button class="secondary" onclick="exportJSON()">Export JSON</button>
-                <button class="danger" onclick="clearAllData()">Clear All</button>
+
+                <button id="exportButton" class="secondary" type="button">
+                    Exportar backup JSON
+                </button>
+
+                <button id="clearButton" class="danger" type="button">
+                    Apagar todos
+                </button>
             </div>
-        </div>
 
-        <input type="text" id="searchInput" class="search-box" placeholder="Search links or conversations...">
-        
-        <div class="filters">
-            <button class="filter-chip" data-filter="all" id="filter-all">All</button>
-            <button class="filter-chip" data-filter="fav" id="filter-fav">Favorites</button>
-            <button class="filter-chip" data-filter="unvisited" id="filter-unvisited">Unvisited</button>
-            <button class="filter-chip" data-filter="repeated" id="filter-repeated">Repeated</button>
-        </div>
-    </div>
+            <input
+                id="searchInput"
+                class="search"
+                type="search"
+                placeholder="Buscar link ou conversa..."
+                aria-label="Buscar links">
 
-    <div class="panel" style="padding: 0;">
-        <div id="linkContainer" class="link-list">
-            <!-- Links will appear here -->
-        </div>
-    </div>
-</div>
+            <div class="filters" aria-label="Filtros de links">
+                <button class="filter-chip active" type="button" data-filter="all">Todos</button>
+                <button class="filter-chip" type="button" data-filter="fav">Favoritos</button>
+                <button class="filter-chip" type="button" data-filter="unvisited">Não visitados</button>
+                <button class="filter-chip" type="button" data-filter="repeated">Repetidos</button>
+            </div>
 
-<div id="toast" class="toast"></div>
+            <div class="sort-row">
+                <label for="sortSelect">Ordenar por:</label>
+                <select id="sortSelect">
+                    <option value="newest">Data mais recente</option>
+                    <option value="oldest">Data mais antiga</option>
+                    <option value="added">Adicionados recentemente</option>
+                </select>
+            </div>
+        </section>
 
-<script>
-    let linksData = [];
-    let currentFilter = 'all';
-    let deletedItem = null;
+        <section id="linkContainer" class="panel" aria-live="polite"></section>
+    </main>
 
-    window.onload = () => {
-        loadFromLocalStorage();
-        renderLinks();
-        
-        document.getElementById('searchInput').addEventListener('input', renderLinks);
-        document.getElementById('txtInput').addEventListener('change', handleTxtImport);
-        document.getElementById('jsonInput').addEventListener('change', handleJsonImport);
-        
-        document.querySelectorAll('.filter-chip').forEach(chip => {
-            chip.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-                e.target.classList.add('active');
-                currentFilter = e.target.dataset.filter;
-                renderLinks();
-            });
-        });
-        document.getElementById('filter-all').classList.add('active');
-    };
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    function handleTxtImport(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    <script>
+        'use strict';
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const content = event.target.result;
-            const filename = file.name.replace('.txt', '');
-            
-            let convName = filename;
-            const firstLine = content.split('\n')[0];
-            const namePatterns = [/^Chat with (.*?)\s*$/, /^(\s*.*?) \(\s*group\s*\)$/i];
-            for (let p of namePatterns) {
-                const match = firstLine.match(p);
-                if (match) { convName = match[1]; break; }
-            }
+        const STORAGE_KEY = 'wa_links_data';
 
-            const lines = content.split('\n');
-            const newLinks = [];
-            const urlRegex = /https?:\/\/[^\s<>"]+/g;
-            
-            // Pattern for WhatsApp dates: [dd/mm/yy, hh:mm:ss] or dd/mm/yy hh:mm
-            const dateRegex = /^\[?(\d{1,2}\/\d{1,2}\/\d{2,4},?\s\d{1,2}:\d{2}(?::\d{2})?)\]?/;
+        let linksData = [];
+        let currentFilter = 'all';
+        let deletedItem = null;
+        let toastTimer = null;
 
-            lines.forEach(line => {
-                const matches = line.match(urlRegex);
-                if (matches) {
-                    const dateMatch = line.match(dateRegex);
-                    const dateStr = dateMatch ? dateMatch[1] : 'Data desconhecida';
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            renderLinks();
 
-                    matches.forEach(url => {
-                        const cleanUrl = url.replace(/[.,]$/, '');
-                        newLinks.push({
-                            url: cleanUrl,
-                            conversation: convName,
-                            date: dateStr,
-                            favorite: false,
-                            visited: false
-                        });
-                    });
-                }
-            });
+            document.getElementById('searchInput')
+                .addEventListener('input', renderLinks);
 
-            mergeLinks(newLinks);
-            e.target.value = '';
-        };
-        reader.readAsText(file);
-    }
+            document.getElementById('sortSelect')
+                .addEventListener('change', renderLinks);
 
-    function mergeLinks(newItems) {
-        const existingUrls = new Set(linksData.map(item => item.url));
-        let addedCount = 0;
+            document.getElementById('txtInput')
+                .addEventListener('change', handleTxtImport);
 
-        newItems.forEach(item => {
-            if (!existingUrls.has(item.url)) {
-                linksData.push(item);
-                addedCount++;
-            }
-        });
+            document.getElementById('jsonInput')
+                .addEventListener('change', handleJsonImport);
 
-        saveToLocalStorage();
-        renderLinks();
-        showToast(`Imported ${addedCount} new links.`);
-    }
+            document.getElementById('exportButton')
+                .addEventListener('click', exportJSON);
 
-    function handleJsonImport(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+            document.getElementById('clearButton')
+                .addEventListener('click', clearAllData);
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const parsed = JSON.parse(event.target.result);
-                let extractedLinks = [];
+            document.querySelectorAll('.filter-chip').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-chip')
+                        .forEach(chip => chip.classList.remove('active'));
 
-                if (Array.isArray(parsed)) extractedLinks = parsed;
-                else if (parsed.links && Array.isArray(parsed.links)) extractedLinks = parsed.links;
-                else if (parsed.items && Array.isArray(parsed.items)) extractedLinks = parsed.items;
-                else if (parsed.data && Array.isArray(parsed.data)) extractedLinks = parsed.data;
-
-                if (extractedLinks.length === 0) throw new Error("No valid link list found in JSON");
-
-                if (confirm("Merge with existing data? (Cancel to replace)")) {
-                    mergeLinks(extractedLinks);
-                } else {
-                    linksData = extractedLinks;
-                    saveToLocalStorage();
+                    button.classList.add('active');
+                    currentFilter = button.dataset.filter;
                     renderLinks();
-                    showToast("Data replaced.");
-                }
-            } catch (err) {
-                alert("Error importing JSON: " + err.message);
-            }
-            e.target.value = '';
-        };
-        reader.readAsText(file);
-    }
-
-    function exportJSON() {
-        const dataStr = JSON.stringify(linksData, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `wa_links_backup_${new Date().toISOString().slice(0,10)}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function renderLinks() {
-        const container = document.getElementById('linkContainer');
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        container.innerHTML = '';
-
-        const urlCounts = {};
-        linksData.forEach(l => urlCounts[l.url] = (urlCounts[l.url] || 0) + 1);
-
-        const filtered = linksData.filter(item => {
-            const matchesSearch = item.url.toLowerCase().includes(searchTerm) || 
-                                  item.conversation.toLowerCase().includes(searchTerm);
-            
-            if (!matchesSearch) return false;
-            if (currentFilter === 'fav') return item.favorite;
-            if (currentFilter === 'unvisited') return !item.visited;
-            if (currentFilter === 'repeated') return urlCounts[item.url] > 1;
-            return true;
+                });
+            });
         });
 
-        if (filtered.length === 0) {
-            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #777;">No links found.</div>';
-            return;
+        function handleTxtImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                try {
+                    const content = String(reader.result || '');
+                    const conversation = detectConversationName(content, file.name);
+                    const newItems = extractLinks(content, conversation);
+
+                    if (newItems.length === 0) {
+                        showToast('Não encontrei links HTTP ou HTTPS nesse arquivo.');
+                    } else {
+                        mergeLinks(newItems);
+                    }
+                } catch (error) {
+                    alert('Não foi possível importar o arquivo: ' + error.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+
+            reader.onerror = () => {
+                alert('Não foi possível ler o arquivo .txt.');
+                event.target.value = '';
+            };
+
+            reader.readAsText(file);
         }
 
-        filtered.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'link-item';
-            div.innerHTML = `
-                <div class="link-content">
-                    <a href="${item.url}" target="_blank" class="link-url" onclick="markVisited('${item.url}')">${item.url}</a>
-                    <div class="link-meta">
-                        <span class="meta-tag">💬 ${item.conversation}</span>
-                        <span class="meta-tag">📅 ${item.date || 'S/D'}</span>
-                    </div>
-                </div>
-                <div class="link-actions">
-                    <button class="action-btn fav ${item.favorite ? 'active' : ''}" onclick="toggleFav('${item.url}')" title="Favorite">★</button>
-                    <button class="action-btn" onclick="removeLink('${item.url}')" title="Remove">🗑</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
+        function detectConversationName(content, filename) {
+            const fallback = filename.replace(/\.txt$/i, '').trim() || 'Conversa';
+            const firstLines = content.split(/\r?\n/).slice(0, 10);
 
-    function toggleFav(url) {
-        const item = linksData.find(l => l.url === url);
-        if (item) item.favorite = !item.favorite;
-        saveToLocalStorage();
-        renderLinks();
-    }
+            for (const line of firstLines) {
+                const patterns = [
+                    /^(?:WhatsApp\s+)?Chat with\s+(.+?)\s*$/i,
+                    /^Conversa com\s+(.+?)\s*$/i,
+                    /^Chat de\s+(.+?)\s*$/i
+                ];
 
-    function markVisited(url) {
-        const item = linksData.find(l => l.url === url);
-        if (item) item.visited = true;
-        saveToLocalStorage();
-    }
+                for (const pattern of patterns) {
+                    const match = line.trim().match(pattern);
+                    if (match) return match[1].trim();
+                }
+            }
 
-    function removeLink(url) {
-        const index = linksData.findIndex(l => l.url === url);
-        if (index > -1) {
-            deletedItem = { ...linksData[index], originalIndex: index };
+            return fallback;
+        }
+
+        function extractLinks(content, conversation) {
+            const lines = content.split(/\r?\n/);
+            const items = [];
+            const urlRegex = /https?:\/\/[^\s<>"']+/gi;
+
+            for (const line of lines) {
+                const messageDate = extractMessageDate(line);
+                const matches = line.match(urlRegex) || [];
+
+                for (const rawUrl of matches) {
+                    const url = cleanUrl(rawUrl);
+                    if (!isValidHttpUrl(url)) continue;
+
+                    items.push({
+                        id: createId(),
+                        url,
+                        conversation,
+                        date: messageDate,
+                        addedDate: new Date().toISOString(),
+                        favorite: false,
+                        visited: false,
+                        tags: []
+                    });
+                }
+            }
+
+            return items;
+        }
+
+        function extractMessageDate(line) {
+            // Aceita formatos comuns, por exemplo:
+            // [16/10/26, 14:30:15] Nome: mensagem
+            // 16/10/2026, 14:30 - Nome: mensagem
+            // 16/10/26 14:30 - Nome: mensagem
+            const match = line.match(
+                /^\[?(\d{1,2}[/.]\d{1,2}[/.]\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*(?:[-–]\s*)?/
+            );
+
+            if (!match) return '';
+
+            const datePart = match[1].replace(/\./g, '/');
+            return `${datePart}, ${match[2]}`;
+        }
+
+        function cleanUrl(rawUrl) {
+            return rawUrl.replace(/[.,!?;:)\]}]+$/g, '');
+        }
+
+        function isValidHttpUrl(value) {
+            try {
+                const parsed = new URL(value);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+
+        function createId() {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+
+            return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        function normalizeItem(item) {
+            if (typeof item === 'string') {
+                if (!isValidHttpUrl(item)) return null;
+
+                return {
+                    id: createId(),
+                    url: item,
+                    conversation: 'Importado',
+                    date: '',
+                    addedDate: new Date().toISOString(),
+                    favorite: false,
+                    visited: false,
+                    tags: []
+                };
+            }
+
+            if (!item || typeof item !== 'object') return null;
+
+            const url = String(item.url || item.link || '').trim();
+            if (!isValidHttpUrl(url)) return null;
+
+            return {
+                id: String(item.id || createId()),
+                url,
+                conversation: String(item.conversation || item.chat || item.source || 'Importado'),
+                date: String(item.date || item.messageDate || ''),
+                addedDate: String(item.addedDate || item.createdAt || new Date().toISOString()),
+                favorite: Boolean(item.favorite ?? item.fav),
+                visited: Boolean(item.visited),
+                tags: Array.isArray(item.tags) ? item.tags.map(String) : []
+            };
+        }
+
+        function mergeLinks(newItems) {
+            const existingKeys = new Set(
+                linksData.map(item => makeDuplicateKey(item))
+            );
+
+            let addedCount = 0;
+
+            for (const rawItem of newItems) {
+                const item = normalizeItem(rawItem);
+                if (!item) continue;
+
+                const key = makeDuplicateKey(item);
+                if (existingKeys.has(key)) continue;
+
+                linksData.push(item);
+                existingKeys.add(key);
+                addedCount++;
+            }
+
+            saveToLocalStorage();
+            renderLinks();
+            showToast(`Importação concluída: ${addedCount} link(s) novo(s).`);
+        }
+
+        function makeDuplicateKey(item) {
+            return `${String(item.url || '').trim().toLowerCase()}|${String(item.conversation || '').trim().toLowerCase()}`;
+        }
+
+        function handleJsonImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                try {
+                    const parsed = JSON.parse(String(reader.result || ''));
+                    const importedItems = findItemsArray(parsed)
+                        .map(normalizeItem)
+                        .filter(Boolean);
+
+                    if (importedItems.length === 0) {
+                        throw new Error('O JSON não contém uma lista válida de links.');
+                    }
+
+                    const merge = confirm(
+                        'Clique em OK para mesclar com os dados existentes. ' +
+                        'Clique em Cancelar para substituir todos os dados.'
+                    );
+
+                    if (merge) {
+                        mergeLinks(importedItems);
+                    } else {
+                        linksData = removeDuplicates(importedItems);
+                        saveToLocalStorage();
+                        renderLinks();
+                        showToast('Dados substituídos.');
+                    }
+                } catch (error) {
+                    alert('Erro ao importar JSON: ' + error.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+
+            reader.onerror = () => {
+                alert('Não foi possível ler o arquivo JSON.');
+                event.target.value = '';
+            };
+
+            reader.readAsText(file);
+        }
+
+        function findItemsArray(parsed) {
+            if (Array.isArray(parsed)) return parsed;
+
+            if (!parsed || typeof parsed !== 'object') return [];
+
+            for (const key of ['links', 'items', 'data']) {
+                if (Array.isArray(parsed[key])) return parsed[key];
+            }
+
+            return [];
+        }
+
+        function removeDuplicates(items) {
+            const seen = new Set();
+
+            return items.filter(item => {
+                const key = makeDuplicateKey(item);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function exportJSON() {
+            const data = {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                links: linksData
+            };
+
+            const blob = new Blob(
+                [JSON.stringify(data, null, 2)],
+                { type: 'application/json' }
+            );
+
+            const objectUrl = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+
+            anchor.href = objectUrl;
+            anchor.download = `whatsapp-links-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+
+            URL.revokeObjectURL(objectUrl);
+        }
+
+        function renderLinks() {
+            const container = document.getElementById('linkContainer');
+            const searchTerm = document.getElementById('searchInput')
+                .value.trim().toLowerCase();
+            const sortOrder = document.getElementById('sortSelect').value;
+
+            const urlCounts = new Map();
+
+            for (const item of linksData) {
+                const key = String(item.url || '').toLowerCase();
+                urlCounts.set(key, (urlCounts.get(key) || 0) + 1);
+            }
+
+            const filtered = linksData
+                .filter(item => {
+                    const url = String(item.url || '');
+                    const conversation = String(item.conversation || '');
+                    const tags = Array.isArray(item.tags) ? item.tags.join(' ') : '';
+
+                    const matchesSearch =
+                        url.toLowerCase().includes(searchTerm) ||
+                        conversation.toLowerCase().includes(searchTerm) ||
+                        tags.toLowerCase().includes(searchTerm);
+
+                    if (!matchesSearch) return false;
+                    if (currentFilter === 'fav') return Boolean(item.favorite);
+                    if (currentFilter === 'unvisited') return !item.visited;
+
+                    if (currentFilter === 'repeated') {
+                        return (urlCounts.get(url.toLowerCase()) || 0) > 1;
+                    }
+
+                    return true;
+                })
+                .sort((a, b) => compareItems(a, b, sortOrder));
+
+            container.replaceChildren();
+
+            if (filtered.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.textContent = 'Nenhum link encontrado.';
+                container.appendChild(empty);
+                return;
+            }
+
+            for (const item of filtered) {
+                container.appendChild(createLinkElement(item));
+            }
+        }
+
+        function compareItems(a, b, sortOrder) {
+            if (sortOrder === 'added') {
+                return (parseDateValue(b.addedDate) || 0) -
+                    (parseDateValue(a.addedDate) || 0);
+            }
+
+            const dateA = parseMessageDate(a.date);
+            const dateB = parseMessageDate(b.date);
+
+            if (dateA === null && dateB === null) return 0;
+            if (dateA === null) return 1;
+            if (dateB === null) return -1;
+
+            return sortOrder === 'oldest' ? dateA - dateB : dateB - dateA;
+        }
+
+        function parseMessageDate(value) {
+            if (!value || /desconhecida|s\/d/i.test(String(value))) return null;
+
+            const text = String(value).trim();
+            const match = text.match(
+                /^(\d{1,2})[/.](\d{1,2})[/.](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/
+            );
+
+            if (!match) {
+                const timestamp = Date.parse(text);
+                return Number.isNaN(timestamp) ? null : timestamp;
+            }
+
+            const day = Number(match[1]);
+            const month = Number(match[2]);
+            let year = Number(match[3]);
+            const hour = Number(match[4]);
+            const minute = Number(match[5]);
+            const second = Number(match[6] || 0);
+
+            if (year < 100) year += year < 50 ? 2000 : 1900;
+
+            const date = new Date(year, month - 1, day, hour, minute, second);
+
+            // Evita aceitar datas inválidas, como 32/13/26.
+            if (
+                date.getFullYear() !== year ||
+                date.getMonth() !== month - 1 ||
+                date.getDate() !== day
+            ) {
+                return null;
+            }
+
+            return date.getTime();
+        }
+
+        function parseDateValue(value) {
+            if (!value) return null;
+            const timestamp = Date.parse(value);
+            return Number.isNaN(timestamp) ? null : timestamp;
+        }
+
+        function createLinkElement(item) {
+            const row = document.createElement('article');
+            row.className = 'link-item';
+
+            const content = document.createElement('div');
+            content.className = 'link-content';
+
+            const anchor = document.createElement('a');
+            anchor.className = 'link-url';
+            anchor.href = item.url;
+            anchor.target = '_blank';
+            anchor.rel = 'noopener noreferrer';
+            anchor.textContent = item.url;
+            anchor.title = item.url;
+            anchor.addEventListener('click', () => markVisited(item.id));
+
+            const meta = document.createElement('div');
+            meta.className = 'link-meta';
+
+            const conversation = document.createElement('span');
+            conversation.className = 'meta-tag';
+            conversation.textContent = `💬 ${item.conversation || 'Conversa desconhecida'}`;
+
+            const date = document.createElement('span');
+            date.className = 'meta-tag';
+            date.textContent = `📅 ${formatDisplayDate(item.date)}`;
+
+            meta.append(conversation, date);
+
+            if (Array.isArray(item.tags)) {
+                for (const tagText of item.tags) {
+                    const tag = document.createElement('span');
+                    tag.className = 'meta-tag';
+                    tag.textContent = `# ${tagText}`;
+                    meta.appendChild(tag);
+                }
+            }
+
+            content.append(anchor, meta);
+
+            const actions = document.createElement('div');
+            actions.className = 'link-actions';
+
+            const favorite = document.createElement('button');
+            favorite.type = 'button';
+            favorite.className = `action-btn favorite${item.favorite ? ' active' : ''}`;
+            favorite.textContent = '★';
+            favorite.title = item.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+            favorite.setAttribute('aria-label', favorite.title);
+            favorite.addEventListener('click', () => toggleFavorite(item.id));
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'action-btn';
+            remove.textContent = '🗑';
+            remove.title = 'Remover link';
+            remove.setAttribute('aria-label', 'Remover link');
+            remove.addEventListener('click', () => removeLink(item.id));
+
+            actions.append(favorite, remove);
+            row.append(content, actions);
+
+            return row;
+        }
+
+        function formatDisplayDate(value) {
+            if (!value) return 'Data desconhecida';
+
+            const timestamp = parseMessageDate(value);
+            if (timestamp === null) return value;
+
+            return new Intl.DateTimeFormat('pt-BR', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+            }).format(new Date(timestamp));
+        }
+
+        function toggleFavorite(id) {
+            const item = linksData.find(link => link.id === id);
+            if (!item) return;
+
+            item.favorite = !item.favorite;
+            saveToLocalStorage();
+            renderLinks();
+        }
+
+        function markVisited(id) {
+            const item = linksData.find(link => link.id === id);
+            if (!item) return;
+
+            item.visited = true;
+            saveToLocalStorage();
+        }
+
+        function removeLink(id) {
+            const index = linksData.findIndex(link => link.id === id);
+            if (index === -1) return;
+
+            deletedItem = {
+                item: linksData[index],
+                index
+            };
+
             linksData.splice(index, 1);
             saveToLocalStorage();
             renderLinks();
-            showToast(`Removed. <a href="#" style="color:white; text-decoration:underline" onclick="undoDelete()">Undo</a>`);
+            showUndoToast();
         }
-    }
 
-    function undoDelete() {
-        if (deletedItem) {
-            linksData.splice(deletedItem.originalIndex, 0, deletedItem);
+        function undoDelete() {
+            if (!deletedItem) return;
+
+            const index = Math.min(deletedItem.index, linksData.length);
+            linksData.splice(index, 0, deletedItem.item);
+            deletedItem = null;
+
+            saveToLocalStorage();
+            renderLinks();
+            showToast('Link restaurado.');
+        }
+
+        function clearAllData() {
+            if (!confirm('Apagar todos os links salvos neste navegador?')) return;
+
+            linksData = [];
             deletedItem = null;
             saveToLocalStorage();
             renderLinks();
-            showToast("Restored!");
+            showToast('Todos os links foram apagados.');
         }
-    }
 
-    function clearAllData() {
-        if (confirm("Delete all stored links permanently?")) {
-            linksData = [];
-            saveToLocalStorage();
-            renderLinks();
-            showToast("All data cleared.");
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(linksData));
+                return true;
+            } catch (error) {
+                console.error('Erro ao salvar no armazenamento local:', error);
+
+                if (error && (
+                    error.name === 'QuotaExceededError' ||
+                    error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+                )) {
+                    alert('O armazenamento do navegador está cheio. Exporte um backup e remova alguns links.');
+                } else {
+                    alert('Não foi possível salvar os dados no armazenamento do navegador.');
+                }
+
+                return false;
+            }
         }
-    }
 
-    function saveToLocalStorage() {
-        try {
-            localStorage.setItem('wa_links_data', JSON.stringify(linksData));
-        } catch (e) {
-            if (e.name === 'QuotaExceededError') alert("Storage limit reached!");
+        function loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) {
+                    linksData = [];
+                    return;
+                }
+
+                const parsed = JSON.parse(stored);
+                linksData = Array.isArray(parsed)
+                    ? parsed.map(normalizeItem).filter(Boolean)
+                    : [];
+            } catch (error) {
+                console.error('Erro ao carregar os dados:', error);
+                linksData = [];
+                alert('Não foi possível ler os dados salvos neste navegador.');
+            }
         }
-    }
 
-    function loadFromLocalStorage() {
-        try {
-            const stored = localStorage.getItem('wa_links_data');
-            if (stored) linksData = JSON.parse(stored);
-        } catch (e) { linksData = []; }
-    }
+        function showUndoToast() {
+            const toast = document.getElementById('toast');
+            toast.replaceChildren();
+            toast.appendChild(document.createTextNode('Link removido. '));
 
-    function showToast(msg) {
-        const toast = document.getElementById('toast');
-        toast.innerHTML = msg;
-        toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 3000);
-    }
-</script>
+            const undoButton = document.createElement('button');
+            undoButton.type = 'button';
+            undoButton.textContent = 'Desfazer';
+            undoButton.addEventListener('click', undoDelete, { once: true });
 
+            toast.appendChild(undoButton);
+            showToastElement(toast);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            showToastElement(toast);
+        }
+
+        function showToastElement(toast) {
+            toast.style.display = 'block';
+            clearTimeout(toastTimer);
+
+            toastTimer = setTimeout(() => {
+                toast.style.display = 'none';
+            }, 5000);
+        }
+    </script>
 </body>
 </html>
