@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -138,6 +137,16 @@
             font-size: 12px;
             color: #777;
             margin-top: 4px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .meta-tag {
+            background: #eee;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
         }
 
         .link-actions { display: flex; gap: 8px; }
@@ -209,7 +218,6 @@
     let currentFilter = 'all';
     let deletedItem = null;
 
-    // Initialize
     window.onload = () => {
         loadFromLocalStorage();
         renderLinks();
@@ -229,8 +237,6 @@
         document.getElementById('filter-all').classList.add('active');
     };
 
-    // --- Core Logic ---
-
     function handleTxtImport(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -240,36 +246,42 @@
             const content = event.target.result;
             const filename = file.name.replace('.txt', '');
             
-            // Conversation Detection: Look for "Chat with X" or "Group Y" patterns
             let convName = filename;
-            const patterns = [
-                /^Chat with (.*?)\s*$/,
-                /^(\s*.*?) \(\s*group\s*\)$/i,
-                /^WhatsApp Chat with (.*?)$/
-            ];
-            
             const firstLine = content.split('\n')[0];
-            for (let p of patterns) {
+            const namePatterns = [/^Chat with (.*?)\s*$/, /^(\s*.*?) \(\s*group\s*\)$/i];
+            for (let p of namePatterns) {
                 const match = firstLine.match(p);
                 if (match) { convName = match[1]; break; }
             }
 
+            const lines = content.split('\n');
+            const newLinks = [];
             const urlRegex = /https?:\/\/[^\s<>"]+/g;
-            const matches = content.match(urlRegex) || [];
             
-            const newLinks = matches.map(url => {
-                const cleanUrl = url.replace(/[.,]$/, ''); // Remove trailing punctuation
-                return {
-                    url: cleanUrl,
-                    conversation: convName,
-                    addedDate: new Date().toISOString(),
-                    favorite: false,
-                    visited: false
-                };
+            // Pattern for WhatsApp dates: [dd/mm/yy, hh:mm:ss] or dd/mm/yy hh:mm
+            const dateRegex = /^\[?(\d{1,2}\/\d{1,2}\/\d{2,4},?\s\d{1,2}:\d{2}(?::\d{2})?)\]?/;
+
+            lines.forEach(line => {
+                const matches = line.match(urlRegex);
+                if (matches) {
+                    const dateMatch = line.match(dateRegex);
+                    const dateStr = dateMatch ? dateMatch[1] : 'Data desconhecida';
+
+                    matches.forEach(url => {
+                        const cleanUrl = url.replace(/[.,]$/, '');
+                        newLinks.push({
+                            url: cleanUrl,
+                            conversation: convName,
+                            date: dateStr,
+                            favorite: false,
+                            visited: false
+                        });
+                    });
+                }
             });
 
             mergeLinks(newLinks);
-            e.target.value = ''; // Reset input
+            e.target.value = '';
         };
         reader.readAsText(file);
     }
@@ -300,26 +312,20 @@
                 const parsed = JSON.parse(event.target.result);
                 let extractedLinks = [];
 
-                // Flexible JSON structure handling
-                if (Array.isArray(parsed)) {
-                    extractedLinks = parsed;
-                } else if (parsed.links && Array.isArray(parsed.links)) {
-                    extractedLinks = parsed.links;
-                } else if (parsed.items && Array.isArray(parsed.items)) {
-                    extractedLinks = parsed.items;
-                } else if (parsed.data && Array.isArray(parsed.data)) {
-                    extractedLinks = parsed.data;
-                }
+                if (Array.isArray(parsed)) extractedLinks = parsed;
+                else if (parsed.links && Array.isArray(parsed.links)) extractedLinks = parsed.links;
+                else if (parsed.items && Array.isArray(parsed.items)) extractedLinks = parsed.items;
+                else if (parsed.data && Array.isArray(parsed.data)) extractedLinks = parsed.data;
 
                 if (extractedLinks.length === 0) throw new Error("No valid link list found in JSON");
 
-                if (confirm("Do you want to MERGE with existing data? (Cancel to REPLACE everything)")) {
+                if (confirm("Merge with existing data? (Cancel to replace)")) {
                     mergeLinks(extractedLinks);
                 } else {
                     linksData = extractedLinks;
                     saveToLocalStorage();
                     renderLinks();
-                    showToast("Data replaced successfully.");
+                    showToast("Data replaced.");
                 }
             } catch (err) {
                 alert("Error importing JSON: " + err.message);
@@ -335,20 +341,16 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `whatsapp_links_backup_${new Date().toISOString().slice(0,10)}.json`;
+        link.download = `wa_links_backup_${new Date().toISOString().slice(0,10)}.json`;
         link.click();
         URL.revokeObjectURL(url);
     }
-
-    // --- UI Rendering ---
 
     function renderLinks() {
         const container = document.getElementById('linkContainer');
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         container.innerHTML = '';
 
-        // Calculate frequency for "Repeated" filter (though set logic prevents dupes in this version, 
-        // we keep the structure for future multi-chat tracking)
         const urlCounts = {};
         linksData.forEach(l => urlCounts[l.url] = (urlCounts[l.url] || 0) + 1);
 
@@ -357,7 +359,6 @@
                                   item.conversation.toLowerCase().includes(searchTerm);
             
             if (!matchesSearch) return false;
-
             if (currentFilter === 'fav') return item.favorite;
             if (currentFilter === 'unvisited') return !item.visited;
             if (currentFilter === 'repeated') return urlCounts[item.url] > 1;
@@ -369,13 +370,16 @@
             return;
         }
 
-        filtered.forEach((item, index) => {
+        filtered.forEach(item => {
             const div = document.createElement('div');
             div.className = 'link-item';
             div.innerHTML = `
                 <div class="link-content">
                     <a href="${item.url}" target="_blank" class="link-url" onclick="markVisited('${item.url}')">${item.url}</a>
-                    <div class="link-meta">${item.conversation}</div>
+                    <div class="link-meta">
+                        <span class="meta-tag">💬 ${item.conversation}</span>
+                        <span class="meta-tag">📅 ${item.date || 'S/D'}</span>
+                    </div>
                 </div>
                 <div class="link-actions">
                     <button class="action-btn fav ${item.favorite ? 'active' : ''}" onclick="toggleFav('${item.url}')" title="Favorite">★</button>
@@ -385,8 +389,6 @@
             container.appendChild(div);
         });
     }
-
-    // --- Helpers & Storage ---
 
     function toggleFav(url) {
         const item = linksData.find(l => l.url === url);
@@ -399,7 +401,6 @@
         const item = linksData.find(l => l.url === url);
         if (item) item.visited = true;
         saveToLocalStorage();
-        // Render not called immediately to avoid jumping while user clicks link
     }
 
     function removeLink(url) {
@@ -409,7 +410,7 @@
             linksData.splice(index, 1);
             saveToLocalStorage();
             renderLinks();
-            showToast("Link removed. <a href='#' style='color:white; text-decoration:underline' onclick='undoDelete()'>Undo</a>");
+            showToast(`Removed. <a href="#" style="color:white; text-decoration:underline" onclick="undoDelete()">Undo</a>`);
         }
     }
 
@@ -436,12 +437,7 @@
         try {
             localStorage.setItem('wa_links_data', JSON.stringify(linksData));
         } catch (e) {
-            console.error("LocalStorage Error:", e);
-            if (e.name === 'QuotaExceededError') {
-                alert("Storage limit reached! Please export your data and clear some links.");
-            } else {
-                alert("Could not save data to browser storage.");
-            }
+            if (e.name === 'QuotaExceededError') alert("Storage limit reached!");
         }
     }
 
@@ -449,10 +445,7 @@
         try {
             const stored = localStorage.getItem('wa_links_data');
             if (stored) linksData = JSON.parse(stored);
-        } catch (e) {
-            console.error("Error loading data:", e);
-            linksData = [];
-        }
+        } catch (e) { linksData = []; }
     }
 
     function showToast(msg) {
@@ -465,4 +458,3 @@
 
 </body>
 </html>
-```
